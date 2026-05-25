@@ -40,3 +40,18 @@ ShibaSteps aims to solve this specific problem:
 > How might we help users translate long-term goals into daily actions and maintain motivation through simple tracking, rewards, and social encouragement?
 
 ---
+
+## 3. Target Users
+
+ShibaSteps is mainly designed for students and young adults who want to build better habits or manage personal goals.
+
+Potential users include:
+
+- University students managing academic tasks, projects, and self-study plans
+- Students preparing for exams who need consistent revision routines
+- People trying to build health, fitness, or lifestyle habits
+- Users who like cute, friendly, low-pressure productivity tools
+- Users who benefit from community encouragement and visible progress tracking
+
+---
+
