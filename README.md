@@ -55,3 +55,17 @@ Potential users include:
 
 ---
 
+## 4. Core Idea
+
+The core idea of ShibaSteps is simple:
+
+1. Users set a long-term goal.
+2. The goal is broken down into smaller daily tasks.
+3. Users check off completed tasks each day.
+4. Completed tasks contribute to streaks and bone points.
+5. Users can share progress in a Dog Circle community.
+6. Community interaction provides encouragement and accountability.
+
+Instead of making productivity feel strict or stressful, ShibaSteps uses a cute Shiba-themed design to make progress feel friendly and rewarding.
+
+---
