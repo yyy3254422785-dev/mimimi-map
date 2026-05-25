@@ -23,3 +23,20 @@ The MVP currently focuses on the core user experience of:
 The product uses a playful Shiba visual style to make goal-tracking feel less stressful and more encouraging.
 
 ---
+## 2. Problem Statement
+
+A common reason people fail to maintain goals is not lack of ambition, but lack of daily structure.
+
+For example, a user may say:
+
+> “I want to become fitter.”  
+> “I want to study more consistently.”  
+> “I want to finish my project earlier.”
+
+These goals are meaningful, but they are too broad. Without daily reminders, smaller action steps, and visible progress, users may easily delay or give up.
+
+ShibaSteps aims to solve this specific problem:
+
+> How might we help users translate long-term goals into daily actions and maintain motivation through simple tracking, rewards, and social encouragement?
+
+---
