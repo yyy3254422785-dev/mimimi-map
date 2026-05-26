@@ -653,3 +653,28 @@ Possible feedback questions:
 - What feature should be improved first?
 
 ---
+
+## 17. Milestone 1 Focus
+
+For Milestone 1, the focus is to show that the project has moved beyond an idea and has a working proof of concept.
+
+Key deliverables include:
+
+- Updated GitHub repository
+- Working React + Vite project
+- README with proof-of-concept explanation
+- Project log
+- Updated poster
+- Updated video
+- Evidence of technical progress
+- Clear future development plan
+
+The MVP should demonstrate at least one meaningful feature or user flow.
+
+For ShibaSteps, the most important flow is:
+
+```text
+Long-term goal → Daily task → Check-in → Progress/reward → Community encouragement
+```
+
+---
