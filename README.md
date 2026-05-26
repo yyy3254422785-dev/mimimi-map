@@ -382,3 +382,26 @@ http://localhost:5173
 ```
 
 ---
+## 10. Development Workflow
+
+A recommended workflow for team collaboration is:
+
+1. Pull the latest code from GitHub.
+2. Make changes in a separate branch if needed.
+3. Test the project locally or in Codespaces.
+4. Stage the changed files.
+5. Commit with a clear message.
+6. Push the changes to GitHub.
+7. Create a pull request if working through branches.
+8. Review and merge changes carefully.
+
+Example commands:
+
+```bash
+git status
+git add .
+git commit -m "Add daily check-in UI"
+git push
+```
+
+---
