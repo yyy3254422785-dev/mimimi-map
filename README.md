@@ -614,3 +614,18 @@ The main message is:
 > Small steps every day can lead to meaningful long-term improvement.
 
 ---
+
+## 15. Limitations
+
+The current MVP has some limitations:
+
+- It may not yet include real user authentication.
+- Some features may use mock data.
+- The Dog Circle community may be simulated rather than fully functional.
+- The database may not yet be fully integrated.
+- The reward system may still be basic.
+- The design may need further user testing and refinement.
+
+These limitations are expected at the MVP stage. The goal is to prove the core concept first, then improve the product based on feedback.
+
+---
