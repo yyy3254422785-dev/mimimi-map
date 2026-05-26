@@ -330,3 +330,55 @@ npm run dev
 ```
 
 ---
+
+## 9. How to Run the Project
+
+### 9.1 Run in GitHub Codespaces
+
+1. Open the GitHub repository.
+2. Click **Code**.
+3. Open the project using **Codespaces**.
+4. Wait for the Codespace environment to load.
+5. Open the terminal.
+6. Install dependencies:
+
+```bash
+npm install
+```
+
+7. Start the development server:
+
+```bash
+npm run dev
+```
+
+8. Open the forwarded port, usually:
+
+```text
+http://localhost:5173
+```
+
+In Codespaces, this can usually be opened from the **Ports** tab by selecting the port and clicking **Open in Browser**.
+
+---
+
+### 9.2 Run Locally
+
+If running locally, make sure Node.js and npm are installed.
+
+Then run:
+
+```bash
+npm install
+npm run dev
+```
+
+After that, open the local development URL shown in the terminal.
+
+For Vite projects, it is commonly:
+
+```text
+http://localhost:5173
+```
+
+---
