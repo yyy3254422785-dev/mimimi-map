@@ -184,3 +184,23 @@ Possible uses of bone points in future versions:
 - Showing progress levels
 
 ---
+
+### 5.8 Dog Circle Community
+
+Dog Circle is a small community feature where users can share daily check-ins and encourage each other.
+
+The intended design is that around 20 users may form a small circle.
+
+Possible community actions include:
+
+- Posting daily progress
+- Giving encouragement
+- Liking or reacting to check-ins
+- Commenting on friends’ updates
+- Contributing points to decorate the Dog Circle
+
+This feature addresses the social side of habit-building. Many users are more likely to stay consistent when they feel seen and supported.
+
+For the current MVP, Dog Circle may be simulated with mock data or static UI to demonstrate the intended interaction flow.
+
+---
