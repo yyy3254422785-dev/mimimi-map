@@ -473,3 +473,102 @@ Current progress may include:
 This section should be updated regularly as the project develops.
 
 ---
+
+## 13. Future Improvements
+
+Future versions of ShibaSteps may include:
+
+### 13.1 User Authentication
+
+Allow users to sign up and log in.
+
+This would make it possible to store user-specific goals and progress.
+
+---
+
+### 13.2 Database Integration
+
+A database can be used to store:
+
+- User accounts
+- Long-term goals
+- Daily tasks
+- Completed check-ins
+- Bone points
+- Dog Circle posts
+- Comments and reactions
+
+Possible database options include:
+
+- Firebase
+- Supabase
+- MongoDB
+- PostgreSQL
+
+The final choice depends on project requirements, team familiarity, and deployment needs.
+
+---
+
+### 13.3 Real Goal Creation
+
+Instead of using mock data, users should be able to create, edit, and delete their own goals.
+
+Possible actions:
+
+- Add a new long-term goal
+- Break it into daily tasks
+- Edit task details
+- Delete unnecessary tasks
+- Mark tasks as completed
+
+---
+
+### 13.4 Real Calendar Integration
+
+A more complete version could include:
+
+- Date-based task planning
+- Calendar view
+- Rescheduling incomplete tasks
+- Weekly review
+- Monthly progress summary
+
+---
+
+### 13.5 Dog Circle Backend
+
+The Dog Circle feature could become more realistic by supporting:
+
+- User posts
+- Likes
+- Comments
+- Shared group points
+- Group decoration rewards
+- Privacy controls
+
+---
+
+### 13.6 Data Visualization
+
+The app could show progress through:
+
+- Weekly completion rate
+- Long-term goal progress
+- Streak statistics
+- Task completion history
+- Community activity summary
+
+---
+
+### 13.7 Improved Reward System
+
+Bone points could be used for:
+
+- Unlocking badges
+- Decorating a Shiba avatar
+- Customising the Dog Circle
+- Unlocking achievement levels
+
+The reward system should remain simple and supportive. It should not distract from the main goal of building consistent habits.
+
+---
