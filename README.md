@@ -678,3 +678,11 @@ Long-term goal → Daily task → Check-in → Progress/reward → Community enc
 ```
 
 ---
+
+## 18. Summary
+
+ShibaSteps is a cute Shiba-themed goal-tracking MVP that helps users break long-term goals into daily actions, track progress through check-ins and streaks, earn bone points, and stay motivated through a small Dog Circle community.
+
+The current version focuses on proving the main interaction flow and visual concept through a React + Vite web application.
+
+The project will continue to improve through user feedback, database integration, stronger interactivity, and clearer community features.
