@@ -572,3 +572,45 @@ Bone points could be used for:
 The reward system should remain simple and supportive. It should not distract from the main goal of building consistent habits.
 
 ---
+
+## 14. Design Principles
+
+ShibaSteps follows these design principles:
+
+### 14.1 Simple
+
+The app should be easy to understand without a long tutorial.
+
+Users should quickly know:
+
+- What their goal is
+- What they need to do today
+- Whether they have completed their tasks
+
+---
+
+### 14.2 Encouraging
+
+The app should motivate users without making them feel guilty.
+
+Missing one task should not make the user feel like they have failed completely.
+
+---
+
+### 14.3 Cute but Functional
+
+The Shiba theme should make the app more enjoyable, but it should not reduce clarity.
+
+Visual elements should support the user experience, not overwhelm it.
+
+---
+
+### 14.4 Progress-Oriented
+
+The app should help users focus on small but consistent progress.
+
+The main message is:
+
+> Small steps every day can lead to meaningful long-term improvement.
+
+---
