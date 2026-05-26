@@ -204,3 +204,57 @@ This feature addresses the social side of habit-building. Many users are more li
 For the current MVP, Dog Circle may be simulated with mock data or static UI to demonstrate the intended interaction flow.
 
 ---
+
+## 6. Proof of Concept
+
+### 6.1 Purpose of the Proof of Concept
+
+The proof of concept aims to show that the core ShibaSteps experience can be represented as a working web interface.
+
+At this stage, the priority is not to build every final feature, but to demonstrate the main user flow:
+
+1. User enters the app
+2. User views goals and daily tasks
+3. User interacts with checklist-style task completion
+4. User sees progress indicators such as streaks or points
+5. User understands the community concept through Dog Circle
+
+This confirms that the idea can be translated into a usable digital product.
+
+---
+
+### 6.2 Current MVP Scope
+
+The current MVP focuses on frontend implementation using React and Vite.
+
+The current version may include:
+
+- A landing or home page
+- Goal cards
+- Daily task checklist
+- Streak calendar mockup
+- Bone points display
+- Dog Circle community mockup
+- Shiba-themed visual design
+- Basic state changes for interactive elements
+
+Depending on implementation progress, some features may currently use mock data instead of a fully connected database.
+
+This is acceptable for the proof-of-concept stage because the main goal is to validate the user interface and interaction flow.
+
+---
+
+### 6.3 What the MVP Demonstrates
+
+The MVP demonstrates:
+
+- The main concept of goal breakdown
+- The daily check-in workflow
+- A friendly and motivating visual style
+- A simple reward system
+- A possible social accountability feature
+- A feasible direction for further development
+
+The MVP does not claim to be a fully deployed production-level application yet.
+
+---
