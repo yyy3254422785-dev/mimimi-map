@@ -69,3 +69,118 @@ The core idea of ShibaSteps is simple:
 Instead of making productivity feel strict or stressful, ShibaSteps uses a cute Shiba-themed design to make progress feel friendly and rewarding.
 
 ---
+
+## 5. Main Features
+
+### 5.1 Long-Term Goal Tracking
+
+Users can create or view long-term goals. These goals represent larger objectives that cannot be completed in one day.
+
+Examples:
+
+- Finish an Orbital milestone
+- Study CS2040C regularly
+- Exercise three times a week
+- Improve English writing
+- Build a healthier sleep schedule
+
+The purpose of long-term goals is to give users direction.
+
+---
+
+### 5.2 Daily Plan
+
+Each long-term goal can be broken down into smaller daily tasks.
+
+Instead of only seeing a large goal, users can focus on what they need to do today.
+
+Example:
+
+Long-term goal:
+
+> Improve fitness
+
+Daily tasks:
+
+- Stretch for 10 minutes
+- Drink enough water
+- Complete one short workout
+- Record today’s progress
+
+This feature helps users move from intention to action.
+
+---
+
+### 5.3 Any-Date Planning
+
+Users may want to add tasks not only for today, but also for future dates.
+
+For example:
+
+- Add a reminder for next Monday
+- Plan a study task for the weekend
+- Add a project meeting note for a specific date
+- Prepare a checklist before a deadline
+
+This allows the app to support flexible planning rather than only same-day task tracking.
+
+---
+
+### 5.4 Task Completion Checklist
+
+Users can check off completed daily tasks.
+
+This gives immediate feedback and helps users clearly see what has been done.
+
+The checklist design is intentionally simple because the MVP prioritizes clarity over complex project management features.
+
+---
+
+### 5.5 Delay / Reschedule Option
+
+If a task is not completed, the user can choose whether to delay it.
+
+This is important because real life is not perfectly predictable. A useful goal-tracking app should not punish the user harshly for missing one task.
+
+Instead, the app should help the user recover and continue.
+
+Potential logic:
+
+- If the user completes the task, it is marked as done.
+- If the user does not complete it, they may move it to another date.
+- The app encourages continuation instead of guilt.
+
+---
+
+### 5.6 Streak Calendar
+
+The streak calendar shows whether the user has checked in consistently.
+
+In the ShibaSteps concept, streaks are represented with cute paw-print check-ins.
+
+The purpose of the streak system is to make progress visible.
+
+It helps users answer:
+
+- Did I make progress today?
+- How consistent have I been this week?
+- Am I maintaining my habit?
+
+---
+
+### 5.7 Bone Points
+
+When users complete tasks, they can earn **bone points**.
+
+Bone points act as a simple reward system.
+
+They are not meant to be a complicated game economy. Instead, they provide a small motivational reward for consistent action.
+
+Possible uses of bone points in future versions:
+
+- Unlocking Shiba decorations
+- Customising a Dog Circle
+- Unlocking badges
+- Showing progress levels
+
+---
