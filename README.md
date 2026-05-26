@@ -382,6 +382,7 @@ http://localhost:5173
 ```
 
 ---
+
 ## 10. Development Workflow
 
 A recommended workflow for team collaboration is:
@@ -403,5 +404,54 @@ git add .
 git commit -m "Add daily check-in UI"
 git push
 ```
+
+---
+
+## 11. GitHub Collaboration Notes
+
+### Commit
+
+A commit records a snapshot of changes.
+
+Good commit messages should be specific.
+
+Examples:
+
+```bash
+Add goal card component
+Update ShibaSteps homepage layout
+Fix daily checklist styling
+Add Dog Circle mockup
+```
+
+Avoid unclear messages such as:
+
+```bash
+update
+change
+final final
+```
+
+---
+
+### Branch
+
+A branch is a separate working version of the project.
+
+Branches are useful when different teammates are working on different features.
+
+Example:
+
+```bash
+git checkout -b feature/dog-circle
+```
+
+---
+
+### Pull Request
+
+A pull request is a request to merge changes from one branch into another branch, usually into `main`.
+
+It allows teammates to review changes before merging.
 
 ---
