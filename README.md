@@ -629,3 +629,27 @@ The current MVP has some limitations:
 These limitations are expected at the MVP stage. The goal is to prove the core concept first, then improve the product based on feedback.
 
 ---
+
+## 16. Evaluation Plan
+
+To evaluate the MVP, we can ask test users to complete simple tasks:
+
+1. Understand the purpose of the app
+2. View a long-term goal
+3. Identify today’s tasks
+4. Check off a completed task
+5. Understand the meaning of bone points
+6. Understand the Dog Circle community concept
+7. Give feedback on whether the app feels motivating
+
+Possible feedback questions:
+
+- Is the app easy to understand?
+- Does the daily checklist feel useful?
+- Does the Shiba theme make the app more enjoyable?
+- Would you use this app to track your own goals?
+- Is the Dog Circle feature motivating or unnecessary?
+- What part of the interface is confusing?
+- What feature should be improved first?
+
+---
