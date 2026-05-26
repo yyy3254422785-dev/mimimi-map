@@ -258,3 +258,75 @@ The MVP demonstrates:
 The MVP does not claim to be a fully deployed production-level application yet.
 
 ---
+
+## 7. Tech Stack
+
+### Frontend
+
+- **React**
+  - Used to build reusable UI components
+  - Suitable for creating interactive single-page applications
+
+- **Vite**
+  - Used as the build tool and development server
+  - Provides fast project setup and fast local preview
+
+- **CSS**
+  - Used for styling the interface
+  - Supports the Shiba-themed visual design
+
+### Development Tools
+
+- **GitHub**
+  - Used for version control and collaboration
+
+- **GitHub Codespaces**
+  - Used as a cloud-based development environment
+  - Allows team members to edit and preview the project without heavy local setup
+
+---
+
+## 8. Project Structure
+
+A typical structure of this React + Vite project is:
+
+```text
+shibasteps/
+├── public/
+│   └── assets or static files
+├── src/
+│   ├── App.jsx
+│   ├── main.jsx
+│   ├── index.css
+│   └── components/
+│       └── reusable UI components
+├── index.html
+├── package.json
+├── vite.config.js
+└── README.md
+```
+
+### Important Files
+
+#### `src/main.jsx`
+
+This is the React entry point. It connects the React application to the HTML root element.
+
+#### `src/App.jsx`
+
+This is the main application component. Most of the visible page content starts from here.
+
+#### `src/index.css`
+
+This file contains global styling for the app.
+
+#### `package.json`
+
+This file stores project information, dependencies, and scripts such as:
+
+```bash
+npm install
+npm run dev
+```
+
+---
