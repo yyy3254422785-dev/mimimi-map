@@ -9,8 +9,18 @@ function getDateKey(date) {
   return `${year}-${month}-${day}`;
 }
 
+function getDateFromKey(dateKey) {
+  return new Date(`${dateKey}T00:00:00`);
+}
+
+function addDays(dateKey, amount) {
+  const date = getDateFromKey(dateKey);
+  date.setDate(date.getDate() + amount);
+  return getDateKey(date);
+}
+
 function formatDisplayDate(dateKey) {
-  const date = new Date(dateKey);
+  const date = getDateFromKey(dateKey);
   return date.toLocaleDateString("en-SG", {
     weekday: "short",
     month: "short",
@@ -20,14 +30,8 @@ function formatDisplayDate(dateKey) {
 
 function getDateLabel(dateKey) {
   const todayKey = getDateKey(new Date());
-
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayKey = getDateKey(yesterday);
-
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowKey = getDateKey(tomorrow);
+  const yesterdayKey = addDays(todayKey, -1);
+  const tomorrowKey = addDays(todayKey, 1);
 
   if (dateKey === todayKey) return "Today";
   if (dateKey === yesterdayKey) return "Yesterday";
