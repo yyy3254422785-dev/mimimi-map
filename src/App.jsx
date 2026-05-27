@@ -43,12 +43,26 @@ function createDateRange(centerDate, range = 3) {
   const dates = [];
 
   for (let i = -range; i <= range; i++) {
-    const date = new Date(centerDate);
-    date.setDate(centerDate.getDate() + i);
-    dates.push(getDateKey(date));
+     dates.push(addDays(centerDateKey, i));
+  }
+  return dates;
+}
+
+function calculateCurrentStreak(checkedInDates, todayKey) {
+  const checkedDateSet = new Set(checkedInDates);
+
+  let currentDateKey = checkedDateSet.has(todayKey)
+    ? todayKey
+    : addDays(todayKey, -1);
+
+  let streakCount = 0;
+
+  while (checkedDateSet.has(currentDateKey)) {
+    streakCount += 1;
+    currentDateKey = addDays(currentDateKey, -1);
   }
 
-  return dates;
+  return streakCount;
 }
 
 function App() {
@@ -63,19 +77,21 @@ function App() {
     return Number(localStorage.getItem("shiba-bone-points")) || 35;
   });
 
-  const [streak, setStreak] = useState(() => {
-    return Number(localStorage.getItem("shiba-streak")) || 4;
-  });
+ 
 
   const [checkedInDates, setCheckedInDates] = useState(() => {
-  const saved = localStorage.getItem("shiba-checked-in-dates");
+    const saved = localStorage.getItem("shiba-checked-in-dates");
 
-  if (saved) {
-    return JSON.parse(saved);
-  }
+    if (saved) {
+      return JSON.parse(saved);
+    }
 
-  return [];
+    return [];
   });
+
+  const streak = useMemo(() => {
+   return calculateCurrentStreak(checkedInDates, todayKey);
+  }, [checkedInDates, todayKey]);
 
   const [selectedDate, setSelectedDate] = useState(todayKey);
   const [customDate, setCustomDate] = useState(todayKey);
@@ -119,17 +135,13 @@ function App() {
   });
 
   const visibleDates = useMemo(() => {
-    return createDateRange(new Date(selectedDate), 3);
+    return createDateRange(selectedDate, 3);
   }, [selectedDate]);
 
   const selectedTasks = tasksByDate[selectedDate] || [];
   const completedCount = selectedTasks.filter((task) => task.done).length;
   const totalCount = selectedTasks.length;
   const hasCheckedInToday = checkedInDates.includes(todayKey);
-
-  useEffect(() => {
-    localStorage.setItem("shiba-goal", goal);
-  }, [goal]);
 
   useEffect(() => {
   localStorage.setItem("shiba-checked-in-dates", JSON.stringify(checkedInDates));
@@ -300,18 +312,11 @@ function App() {
     return;
   }
 
-  const newStreak = streak + 1;
+  const updatedCheckedInDates = [...checkedInDates, todayKey];
+  const newStreak = calculateCurrentStreak(updatedCheckedInDates, todayKey);
 
-  setStreak(newStreak);
+  setCheckedInDates(updatedCheckedInDates);
   setBonePoints((points) => points + 20);
-
-  setCheckedInDates((currentDates) => {
-    if (currentDates.includes(todayKey)) {
-      return currentDates;
-    }
-
-    return [...currentDates, todayKey];
-  });
 
   const newPost = {
     id: crypto.randomUUID(),
