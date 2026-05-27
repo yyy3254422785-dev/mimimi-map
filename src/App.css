@@ -343,3 +343,13 @@ button:disabled:hover {
     flex-direction: column;
   }
 }
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: #c7b8a8;
+}
+
+button:disabled:hover {
+  background: #c7b8a8;
+}
