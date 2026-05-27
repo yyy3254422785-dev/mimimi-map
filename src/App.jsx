@@ -59,6 +59,16 @@ function App() {
     return Number(localStorage.getItem("shiba-streak")) || 4;
   });
 
+  const [checkedInDates, setCheckedInDates] = useState(() => {
+  const saved = localStorage.getItem("shiba-checked-in-dates");
+
+  if (saved) {
+    return JSON.parse(saved);
+  }
+
+  return [];
+  });
+
   const [selectedDate, setSelectedDate] = useState(todayKey);
   const [customDate, setCustomDate] = useState(todayKey);
   const [taskInput, setTaskInput] = useState("");
@@ -107,11 +117,16 @@ function App() {
   const selectedTasks = tasksByDate[selectedDate] || [];
   const completedCount = selectedTasks.filter((task) => task.done).length;
   const totalCount = selectedTasks.length;
+  const hasCheckedInToday = checkedInDates.includes(todayKey);
 
   useEffect(() => {
     localStorage.setItem("shiba-goal", goal);
   }, [goal]);
 
+  useEffect(() => {
+  localStorage.setItem("shiba-checked-in-dates", JSON.stringify(checkedInDates));
+  }, [checkedInDates]);
+  
   useEffect(() => {
     localStorage.setItem("shiba-bone-points", String(bonePoints));
   }, [bonePoints]);
