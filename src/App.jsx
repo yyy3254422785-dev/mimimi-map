@@ -406,7 +406,7 @@ function App() {
               const doneCount = (tasksByDate[dateKey] || []).filter(
                 (task) => task.done
               ).length;
-
+              const isCheckedIn = checkedInDates.includes(dateKey);
               return (
                 <button
                   key={dateKey}
@@ -421,7 +421,7 @@ function App() {
                   <span>{getDateLabel(dateKey)}</span>
                   <strong>{formatDisplayDate(dateKey)}</strong>
                   <small>
-                    {doneCount}/{taskCount} done
+                     {doneCount}/{taskCount} done {isCheckedIn ? "🐾" : ""}
                   </small>
                 </button>
               );
