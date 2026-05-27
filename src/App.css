@@ -98,6 +98,16 @@ button:hover {
   background: #f06f20;
 }
 
+button:disabled {
+  background: #c9b8aa;
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+button:disabled:hover {
+  background: #c9b8aa;
+}
+
 .stats {
   display: flex;
   gap: 16px;

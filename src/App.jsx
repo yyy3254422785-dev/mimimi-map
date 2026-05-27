@@ -126,7 +126,7 @@ function App() {
   useEffect(() => {
   localStorage.setItem("shiba-checked-in-dates", JSON.stringify(checkedInDates));
   }, [checkedInDates]);
-  
+
   useEffect(() => {
     localStorage.setItem("shiba-bone-points", String(bonePoints));
   }, [bonePoints]);
@@ -270,37 +270,51 @@ function App() {
   }
 
   function completeDailyCheckIn() {
-    if (selectedDate !== todayKey) {
-      alert("You can only complete check-in for today.");
-      return;
-    }
-
-    if (selectedTasks.length === 0) {
-      alert("Add at least one task before checking in.");
-      return;
-    }
-
-    const allDone = selectedTasks.every((task) => task.done);
-
-    if (!allDone) {
-      alert("Finish all today's tasks or move unfinished tasks to tomorrow.");
-      return;
-    }
-
-    const newStreak = streak + 1;
-
-    setStreak(newStreak);
-    setBonePoints((points) => points + 20);
-
-    const newPost = {
-      id: crypto.randomUUID(),
-      name: "You",
-      text: `Completed today's plan for "${goal}"! Current streak: ${newStreak} days 🦴`,
-    };
-
-    setPosts((currentPosts) => [newPost, ...currentPosts]);
+  if (selectedDate !== todayKey) {
+    alert("You can only complete check-in for today.");
+    return;
   }
 
+  if (checkedInDates.includes(todayKey)) {
+    alert("You have already checked in today.");
+    return;
+  }
+
+  if (selectedTasks.length === 0) {
+    alert("Add at least one task before checking in.");
+    return;
+  }
+
+  const allDone = selectedTasks.every((task) => task.done);
+
+  if (!allDone) {
+    alert("Finish all today's tasks or move unfinished tasks to tomorrow.");
+    return;
+  }
+
+  const newStreak = streak + 1;
+
+  setStreak(newStreak);
+  setBonePoints((points) => points + 20);
+
+  setCheckedInDates((currentDates) => {
+    if (currentDates.includes(todayKey)) {
+      return currentDates;
+    }
+
+    return [...currentDates, todayKey];
+  });
+
+  const newPost = {
+    id: crypto.randomUUID(),
+    name: "You",
+    text: `Completed today's plan for "${goal}"! Current streak: ${newStreak} days 🦴`,
+  };
+
+  setPosts((currentPosts) => [newPost, ...currentPosts]);
+  }
+
+  
   function jumpToCustomDate() {
     setSelectedDate(customDate);
   }
@@ -470,8 +484,14 @@ function App() {
             </div>
           )}
 
-          <button className="checkin" onClick={completeDailyCheckIn}>
-            Complete Daily Check-in
+          <button
+            className="checkin"
+            onClick={completeDailyCheckIn}
+            disabled={selectedDate === todayKey && hasCheckedInToday}
+          > 
+            {selectedDate === todayKey && hasCheckedInToday
+              ? "Checked in Today"
+             : "Complete Daily Check-in"}
           </button>
         </section>
 
