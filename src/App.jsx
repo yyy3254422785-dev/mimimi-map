@@ -1,6 +1,40 @@
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 
+const STORAGE_KEYS = {
+  goal: "shiba-goal",
+  bonePoints: "shiba-bone-points",
+  streak: "shiba-streak",
+  tasksByDate: "shiba-tasks-by-date",
+  posts: "shiba-posts",
+};
+
+function loadString(key, fallbackValue) {
+  const saved = localStorage.getItem(key);
+  return saved === null ? fallbackValue : saved;
+}
+
+function loadNumber(key, fallbackValue) {
+  const saved = localStorage.getItem(key);
+
+  if (saved === null) {
+    return fallbackValue;
+  }
+
+  const numberValue = Number(saved);
+  return Number.isNaN(numberValue) ? fallbackValue : numberValue;
+}
+
+function loadJSON(key, fallbackValue) {
+  try {
+    const saved = localStorage.getItem(key);
+    return saved === null ? fallbackValue : JSON.parse(saved);
+  } catch (error) {
+    console.error(`Failed to load ${key} from localStorage`, error);
+    return fallbackValue;
+  }
+}
+
 function getDateKey(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
