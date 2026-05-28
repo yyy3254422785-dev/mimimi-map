@@ -4,7 +4,7 @@ import "./App.css";
 const STORAGE_KEYS = {
   goal: "shiba-goal",
   bonePoints: "shiba-bone-points",
-  streak: "shiba-streak",
+  checkedInDates: "shiba-checked-in-dates",
   tasksByDate: "shiba-tasks-by-date",
   posts: "shiba-posts",
 };
