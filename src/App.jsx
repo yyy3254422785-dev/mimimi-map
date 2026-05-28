@@ -73,12 +73,13 @@ function getDateLabel(dateKey) {
   return formatDisplayDate(dateKey);
 }
 
-function createDateRange(centerDate, range = 3) {
+function createDateRange(centerDateKey, range = 3) {
   const dates = [];
 
   for (let i = -range; i <= range; i++) {
-     dates.push(addDays(centerDateKey, i));
+    dates.push(addDays(centerDateKey, i));
   }
+
   return dates;
 }
 
