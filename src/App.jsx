@@ -126,41 +126,41 @@ const [checkedInDates, setCheckedInDates] = useState(() => {
   const [taskInput, setTaskInput] = useState("");
 
   const [tasksByDate, setTasksByDate] = useState(() => {
-    const saved = localStorage.getItem("shiba-tasks-by-date");
-
-    if (saved) {
-      return JSON.parse(saved);
-    }
-
-    return {
-      [todayKey]: [
-        { id: crypto.randomUUID(), text: "Review one lecture topic", done: false },
-        { id: crypto.randomUUID(), text: "Complete 3 practice questions", done: false },
-        { id: crypto.randomUUID(), text: "Write a 5-minute reflection", done: false },
-      ],
-    };
+  return loadJSON(STORAGE_KEYS.tasksByDate, {
+    [todayKey]: [
+      {
+        id: crypto.randomUUID(),
+        text: "Review one lecture topic",
+        done: false,
+      },
+      {
+        id: crypto.randomUUID(),
+        text: "Complete 3 practice questions",
+        done: false,
+      },
+      {
+        id: crypto.randomUUID(),
+        text: "Write a 5-minute reflection",
+        done: false,
+      },
+    ],
   });
+});
 
   const [posts, setPosts] = useState(() => {
-    const saved = localStorage.getItem("shiba-posts");
-
-    if (saved) {
-      return JSON.parse(saved);
-    }
-
-    return [
-      {
-        id: crypto.randomUUID(),
-        name: "Mochi",
-        text: "Checked in today! Our Dog Circle is getting stronger 🐶",
-      },
-      {
-        id: crypto.randomUUID(),
-        name: "Bao",
-        text: "Almost skipped my task, but the streak reminder helped.",
-      },
-    ];
-  });
+  return loadJSON(STORAGE_KEYS.posts, [
+    {
+      id: crypto.randomUUID(),
+      name: "Mochi",
+      text: "Checked in today! Our Dog Circle is getting stronger 🐶",
+    },
+    {
+      id: crypto.randomUUID(),
+      name: "Bao",
+      text: "Almost skipped my task, but the streak reminder helped.",
+    },
+  ]);
+});
 
   const visibleDates = useMemo(() => {
     return createDateRange(selectedDate, 3);
@@ -172,24 +172,30 @@ const [checkedInDates, setCheckedInDates] = useState(() => {
   const hasCheckedInToday = checkedInDates.includes(todayKey);
 
   useEffect(() => {
-  localStorage.setItem("shiba-checked-in-dates", JSON.stringify(checkedInDates));
-  }, [checkedInDates]);
+  localStorage.setItem(STORAGE_KEYS.goal, goal);
+}, [goal]);
 
-  useEffect(() => {
-    localStorage.setItem("shiba-bone-points", String(bonePoints));
-  }, [bonePoints]);
+useEffect(() => {
+  localStorage.setItem(STORAGE_KEYS.bonePoints, String(bonePoints));
+}, [bonePoints]);
 
-  useEffect(() => {
-    localStorage.setItem("shiba-streak", String(streak));
-  }, [streak]);
+useEffect(() => {
+  localStorage.setItem(
+    STORAGE_KEYS.checkedInDates,
+    JSON.stringify(checkedInDates)
+  );
+}, [checkedInDates]);
 
-  useEffect(() => {
-    localStorage.setItem("shiba-tasks-by-date", JSON.stringify(tasksByDate));
-  }, [tasksByDate]);
+useEffect(() => {
+  localStorage.setItem(
+    STORAGE_KEYS.tasksByDate,
+    JSON.stringify(tasksByDate)
+  );
+}, [tasksByDate]);
 
-  useEffect(() => {
-    localStorage.setItem("shiba-posts", JSON.stringify(posts));
-  }, [posts]);
+useEffect(() => {
+  localStorage.setItem(STORAGE_KEYS.posts, JSON.stringify(posts));
+}, [posts]);
 
   function createGoal() {
     const trimmedGoal = goalInput.trim();
