@@ -104,25 +104,18 @@ function App() {
   const todayKey = getDateKey(new Date());
 
   const [goalInput, setGoalInput] = useState("");
-  const [goal, setGoal] = useState(() => {
-    return localStorage.getItem("shiba-goal") || "Prepare for Finals";
-  });
 
-  const [bonePoints, setBonePoints] = useState(() => {
-    return Number(localStorage.getItem("shiba-bone-points")) || 35;
-  });
+const [goal, setGoal] = useState(() => {
+  return loadString(STORAGE_KEYS.goal, "Prepare for Finals");
+});
 
- 
+const [bonePoints, setBonePoints] = useState(() => {
+  return loadNumber(STORAGE_KEYS.bonePoints, 35);
+});
 
-  const [checkedInDates, setCheckedInDates] = useState(() => {
-    const saved = localStorage.getItem("shiba-checked-in-dates");
-
-    if (saved) {
-      return JSON.parse(saved);
-    }
-
-    return [];
-  });
+const [checkedInDates, setCheckedInDates] = useState(() => {
+  return loadJSON(STORAGE_KEYS.checkedInDates, []);
+});
 
   const streak = useMemo(() => {
    return calculateCurrentStreak(checkedInDates, todayKey);
