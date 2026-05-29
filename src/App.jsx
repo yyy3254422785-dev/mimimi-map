@@ -3,6 +3,8 @@ import "./App.css";
 
 const STORAGE_KEYS = {
   goal: "shiba-goal",
+  goals: "shiba-goals"
+  activeGoalId: "shiba-active-goal-id",
   bonePoints: "shiba-bone-points",
   checkedInDates: "shiba-checked-in-dates",
   tasksByDate: "shiba-tasks-by-date",
@@ -106,8 +108,29 @@ function App() {
   const [goalInput, setGoalInput] = useState("");
 
 const [goal, setGoal] = useState(() => {
-  return loadString(STORAGE_KEYS.goal, "Prepare for Finals");
-});
+  const savedGoals = loadJSON(STORAGE_KEYS.goals, null);
+  if (Array.isArray(savedGoals) && savedGoals.length > 0) {
+      return savedGoals;
+    }
+  const savedGoalTitle = loadString(
+      STORAGE_KEYS.goal,
+      "Prepare for Finals"
+    );
+  return [
+      {
+        id: crypto.randomUUID(),
+        title: savedGoalTitle,
+      },
+    ];
+  });
+  const [activeGoalId, setActiveGoalId] = useState(() => {
+    return loadString(STORAGE_KEYS.activeGoalId, "");
+  });
+   const activeGoal =
+    goals.find((goalItem) => goalItem.id === activeGoalId) || goals[0];
+
+  const goal = activeGoal?.title || "Prepare for Finals";
+
 
 const [bonePoints, setBonePoints] = useState(() => {
   return loadNumber(STORAGE_KEYS.bonePoints, 35);
@@ -146,6 +169,37 @@ const [checkedInDates, setCheckedInDates] = useState(() => {
     ],
   });
 });
+  useEffect(() => {
+  const fallbackGoalId = activeGoal?.id;
+
+  if (!fallbackGoalId) {
+    return;
+  }
+
+  setTasksByDate((current) => {
+    let changed = false;
+
+    const updatedTasksByDate = Object.fromEntries(
+      Object.entries(current).map(([dateKey, tasks]) => [
+        dateKey,
+        tasks.map((task) => {
+          if (task.goalId) {
+            return task;
+          }
+
+          changed = true;
+
+          return {
+            ...task,
+            goalId: fallbackGoalId,
+          };
+        }),
+      ])
+    );
+
+    return changed ? updatedTasksByDate : current;
+  });
+  }, [activeGoal?.id]);
 
   const [posts, setPosts] = useState(() => {
   return loadJSON(STORAGE_KEYS.posts, [
@@ -171,9 +225,39 @@ const [checkedInDates, setCheckedInDates] = useState(() => {
   const totalCount = selectedTasks.length;
   const hasCheckedInToday = checkedInDates.includes(todayKey);
 
+  const goalProgressList = useMemo(() => {
+  const allTasks = Object.values(tasksByDate).flat();
+
+  return goals.map((goalItem) => {
+    const relatedTasks = allTasks.filter(
+      (task) => task.goalId === goalItem.id
+    );
+
+    const completedTasks = relatedTasks.filter((task) => task.done).length;
+    const totalTasks = relatedTasks.length;
+    const progressPercent =
+      totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+
+    return {
+      ...goalItem,
+      completed: completedTasks,
+      total: totalTasks,
+      progressPercent,
+    };
+  });
+}, [goals, tasksByDate]);
+
   useEffect(() => {
-  localStorage.setItem(STORAGE_KEYS.goal, goal);
+  localStorage.setItem(STORAGE_KEYS.goal, JSON.stringify(goals));
 }, [goal]);
+useEffect(() => {
+  if (!activeGoal?.id) {
+    return;
+  }
+
+  localStorage.setItem(STORAGE_KEYS.activeGoalId, activeGoal.id);
+  localStorage.setItem(STORAGE_KEYS.goal, goal);
+}, [activeGoal?.id, goal]);
 
 useEffect(() => {
   localStorage.setItem(STORAGE_KEYS.bonePoints, String(bonePoints));
@@ -204,21 +288,30 @@ useEffect(() => {
       return;
     }
 
-    setGoal(trimmedGoal);
+    const newGoal = {
+      id: crypto.randomUUID(),
+      title: trimmedGoal,
+    };
+
+    setGoals((currentGoals) => [...currentGoals, newGoal]);
+    setActiveGoalId(newGoal.id);
 
     const suggestedTasks = [
       {
         id: crypto.randomUUID(),
+        goalId: newGoal.id,
         text: `Break "${trimmedGoal}" into smaller steps`,
         done: false,
       },
       {
         id: crypto.randomUUID(),
+        goalId: newGoal.id,
         text: `Complete one small action for "${trimmedGoal}"`,
         done: false,
       },
       {
         id: crypto.randomUUID(),
+        goalId: newGoal.id,
         text: "Check in before the day ends",
         done: false,
       },
@@ -241,6 +334,7 @@ useEffect(() => {
 
     const newTask = {
       id: crypto.randomUUID(),
+      goalId: activeGoal?.id,
       text: trimmedTask,
       done: false,
     };
@@ -400,6 +494,45 @@ useEffect(() => {
               placeholder="e.g. Prepare for finals"
             />
             <button onClick={createGoal}>Create</button>
+          </div>
+        </section>
+
+                <section className="card wide">
+          <h2>Long-term Goals</h2>
+          <p className="small-text">
+            All long-term goals are listed here. Click a goal to make it the
+            active goal for new tasks.
+          </p>
+
+          <div className="goal-list">
+            {goalProgressList.map((goalItem) => (
+              <button
+                key={goalItem.id}
+                className={
+                  goalItem.id === activeGoal?.id
+                    ? "goal-card active"
+                    : "goal-card"
+                }
+                onClick={() => setActiveGoalId(goalItem.id)}
+              >
+                <div className="goal-card-top">
+                  <strong>{goalItem.title}</strong>
+                  <span>
+                    {goalItem.completed}/{goalItem.total} small tasks completed
+                  </span>
+                </div>
+
+                <div className="goal-progress-bar">
+                  <div
+                    style={{
+                      width: `${goalItem.progressPercent}%`,
+                    }}
+                  />
+                </div>
+
+                <small>{goalItem.progressPercent}% complete</small>
+              </button>
+            ))}
           </div>
         </section>
 

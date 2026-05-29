@@ -194,6 +194,74 @@ button:disabled:hover {
   white-space: nowrap;
 }
 
+.goal-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.goal-card {
+  background: #fff8ee;
+  color: #3b2f2f;
+  border: 2px solid #ffe0b0;
+  padding: 18px;
+  border-radius: 18px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.goal-card:hover {
+  background: #fff2d8;
+}
+
+.goal-card.active {
+  background: #ff8a3d;
+  color: white;
+  border-color: #ff8a3d;
+}
+
+.goal-card.active:hover {
+  background: #f06f20;
+}
+
+.goal-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.goal-card-top strong {
+  font-size: 17px;
+}
+
+.goal-card-top span {
+  font-size: 13px;
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+.goal-progress-bar {
+  height: 10px;
+  background: rgba(255, 195, 111, 0.45);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.goal-progress-bar div {
+  height: 100%;
+  background: #ffc36f;
+  border-radius: 999px;
+}
+
+.goal-card small {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
 .tasks {
   display: flex;
   flex-direction: column;
@@ -305,7 +373,8 @@ button:disabled:hover {
 }
 
 @media (max-width: 900px) {
-  .calendar-row {
+  .calendar-row,
+  .goal-list {
     grid-template-columns: repeat(2, 1fr);
   }
 
@@ -330,7 +399,7 @@ button:disabled:hover {
     align-items: flex-start;
   }
 
-  .layout {
+  .goal-list {
     grid-template-columns: 1fr;
   }
 
