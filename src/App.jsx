@@ -107,7 +107,7 @@ function App() {
 
   const [goalInput, setGoalInput] = useState("");
 
-const [goals, setGoal] = useState(() => {
+const [goals, setGoals] = useState(() => {
   const savedGoals = loadJSON(STORAGE_KEYS.goals, null);
   if (Array.isArray(savedGoals) && savedGoals.length > 0) {
       return savedGoals;
@@ -248,8 +248,9 @@ const [checkedInDates, setCheckedInDates] = useState(() => {
 }, [goals, tasksByDate]);
 
   useEffect(() => {
-  localStorage.setItem(STORAGE_KEYS.goal, JSON.stringify(goals));
-}, [goal]);
+  localStorage.setItem(STORAGE_KEYS.goals, JSON.stringify(goals));
+}, [goals]);
+
 useEffect(() => {
   if (!activeGoal?.id) {
     return;
