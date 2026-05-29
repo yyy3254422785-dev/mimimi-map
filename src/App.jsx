@@ -3,7 +3,7 @@ import "./App.css";
 
 const STORAGE_KEYS = {
   goal: "shiba-goal",
-  goals: "shiba-goals"
+  goals: "shiba-goals",
   activeGoalId: "shiba-active-goal-id",
   bonePoints: "shiba-bone-points",
   checkedInDates: "shiba-checked-in-dates",
@@ -107,7 +107,7 @@ function App() {
 
   const [goalInput, setGoalInput] = useState("");
 
-const [goal, setGoal] = useState(() => {
+const [goals, setGoal] = useState(() => {
   const savedGoals = loadJSON(STORAGE_KEYS.goals, null);
   if (Array.isArray(savedGoals) && savedGoals.length > 0) {
       return savedGoals;
