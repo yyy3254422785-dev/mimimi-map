@@ -9,6 +9,7 @@ const STORAGE_KEYS = {
   checkedInDates: "shiba-checked-in-dates",
   tasksByDate: "shiba-tasks-by-date",
   posts: "shiba-posts",
+  carryOverDismissedDate: "shiba-carry-over-dismissed-date",
 };
 
 function loadString(key, fallbackValue) {
