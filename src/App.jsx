@@ -148,6 +148,7 @@ const [checkedInDates, setCheckedInDates] = useState(() => {
   const [selectedDate, setSelectedDate] = useState(todayKey);
   const [customDate, setCustomDate] = useState(todayKey);
   const [taskInput, setTaskInput] = useState("");
+  const [showCarryOverPrompt, setShowCarryOverPrompt] = useState(false);
 
   const [tasksByDate, setTasksByDate] = useState(() => {
   return loadJSON(STORAGE_KEYS.tasksByDate, {
@@ -226,6 +227,11 @@ const [checkedInDates, setCheckedInDates] = useState(() => {
   const totalCount = selectedTasks.length;
   const hasCheckedInToday = checkedInDates.includes(todayKey);
 
+  const yesterdayKey = addDays(todayKey, -1);
+  const yesterdayUnfinishedCount = (tasksByDate[yesterdayKey] || []).filter(
+  (task) => !task.done
+  ).length;
+
   const goalProgressList = useMemo(() => {
   const allTasks = Object.values(tasksByDate).flat();
 
@@ -282,6 +288,18 @@ useEffect(() => {
 useEffect(() => {
   localStorage.setItem(STORAGE_KEYS.posts, JSON.stringify(posts));
 }, [posts]);
+
+useEffect(() => {
+  const dismissedDate = localStorage.getItem(
+    STORAGE_KEYS.carryOverDismissedDate
+  );
+
+  if (yesterdayUnfinishedCount > 0 && dismissedDate !== todayKey) {
+    setShowCarryOverPrompt(true);
+  } else {
+    setShowCarryOverPrompt(false);
+  }
+}, [yesterdayUnfinishedCount, todayKey]);
 
   function createGoal() {
     const trimmedGoal = goalInput.trim();
@@ -457,14 +475,83 @@ useEffect(() => {
   setPosts((currentPosts) => [newPost, ...currentPosts]);
   }
 
+  function moveYesterdayTasksToToday() {
+  setTasksByDate((current) => {
+    const yesterdayTasks = current[yesterdayKey] || [];
+    const todayTasks = current[todayKey] || [];
+
+    const unfinishedYesterdayTasks = yesterdayTasks.filter(
+      (task) => !task.done
+    );
+
+    const remainingYesterdayTasks = yesterdayTasks.filter(
+      (task) => task.done
+    );
+
+    if (unfinishedYesterdayTasks.length === 0) {
+      return current;
+    }
+
+    const carriedOverTasks = unfinishedYesterdayTasks.map((task) => ({
+      ...task,
+      id: crypto.randomUUID(),
+      done: false,
+    }));
+
+    return {
+      ...current,
+      [yesterdayKey]: remainingYesterdayTasks,
+      [todayKey]: [...todayTasks, ...carriedOverTasks],
+    };
+  });
+
+  localStorage.setItem(STORAGE_KEYS.carryOverDismissedDate, todayKey);
+  setSelectedDate(todayKey);
+  setCustomDate(todayKey);
+  setShowCarryOverPrompt(false);
+}
+
+function dismissCarryOverPrompt() {
+  localStorage.setItem(STORAGE_KEYS.carryOverDismissedDate, todayKey);
+  setShowCarryOverPrompt(false);
+}
+
   
   function jumpToCustomDate() {
     setSelectedDate(customDate);
   }
 
   return (
-    <div className="app">
-      <header className="hero">
+  <div className="app">
+    {showCarryOverPrompt && (
+      <div className="carryover-overlay">
+        <div className="carryover-modal">
+          <div className="dog-icon">🐶</div>
+          <h2>Move unfinished tasks?</h2>
+          <p>
+            You have {yesterdayUnfinishedCount} unfinished task
+            {yesterdayUnfinishedCount > 1 ? "s" : ""} from yesterday.
+          </p>
+          <p className="small-text">
+            Do you want to move them to today's plan?
+          </p>
+
+          <div className="carryover-actions">
+            <button onClick={moveYesterdayTasksToToday}>
+              Move to Today
+            </button>
+            <button
+              className="secondary-button"
+              onClick={dismissCarryOverPrompt}
+            >
+              Not Now
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    <header className="hero">
         <div>
           <p className="team">team mimimi</p>
           <h1>ShibaSteps 🐕</h1>
