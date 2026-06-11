@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+
 import "./App.css";
 
 const STORAGE_KEYS = {
@@ -522,36 +524,67 @@ function dismissCarryOverPrompt() {
   }
 
   return (
-  <div className="app">
-    {showCarryOverPrompt && (
-      <div className="carryover-overlay">
-        <div className="carryover-modal">
-          <div className="dog-icon">🐶</div>
-          <h2>Move unfinished tasks?</h2>
-          <p>
-            You have {yesterdayUnfinishedCount} unfinished task
-            {yesterdayUnfinishedCount > 1 ? "s" : ""} from yesterday.
-          </p>
-          <p className="small-text">
-            Do you want to move them to today's plan?
-          </p>
+    <motion.div
+      className="app"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.35 }}
+  >
+    <AnimatePresence>
+  {showCarryOverPrompt && (
+    <motion.div
+      className="carryover-overlay"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+    >
+      <motion.div
+        className="carryover-modal"
+        initial={{ opacity: 0, scale: 0.9, y: 24 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 24 }}
+        transition={{ duration: 0.25 }}
+      >
+        <div className="dog-icon">🐶</div>
+        <h2>Move unfinished tasks?</h2>
+        <p>
+          You have {yesterdayUnfinishedCount} unfinished task
+          {yesterdayUnfinishedCount > 1 ? "s" : ""} from yesterday.
+        </p>
+        <p className="small-text">
+          Do you want to move them to today's plan?
+        </p>
 
-          <div className="carryover-actions">
-            <button onClick={moveYesterdayTasksToToday}>
-              Move to Today
-            </button>
-            <button
-              className="secondary-button"
-              onClick={dismissCarryOverPrompt}
-            >
-              Not Now
-            </button>
-          </div>
+        <div className="carryover-actions">
+          <motion.button
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            onClick={moveYesterdayTasksToToday}
+          >
+            Move to Today
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            className="secondary-button"
+            onClick={dismissCarryOverPrompt}
+          >
+            Not Now
+          </motion.button>
         </div>
-      </div>
-    )}
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
 
-    <header className="hero">
+    <motion.header
+      className="hero"
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45 }}
+    >
         <div>
           <p className="team">team mimimi</p>
           <h1>ShibaSteps 🐕</h1>
@@ -561,12 +594,16 @@ function dismissCarryOverPrompt() {
           </p>
         </div>
 
-        <div className="dog-card">
+        <motion.div
+          className="dog-card"
+          whileHover={{ y: -6, rotate: 1.5 }}
+          whileTap={{ scale: 0.97 }}
+        >
           <div className="dog-icon">🐶</div>
           <h2>Level 3 Shiba</h2>
           <p>{bonePoints} 🦴 Bone Points</p>
         </div>
-      </header>
+      </motion.header>
 
       <main className="layout">
         <section className="card">
@@ -750,7 +787,7 @@ function dismissCarryOverPrompt() {
                   </div>
                 </div>
               ))}
-            </div>
+            </motion.div>
           )}
 
           <button
@@ -785,7 +822,7 @@ function dismissCarryOverPrompt() {
           </div>
         </section>
       </main>
-    </div>
+    </motion.div>
   );
 }
 
