@@ -7,6 +7,28 @@ import {
   publishTodayTasks,
 } from "./shibaApi";
 
+ const [tasksByDate, setTasksByDate] = useState(() => {
+  return loadJSON(STORAGE_KEYS.tasksByDate, {
+    [todayKey]: [
+      {
+        id: crypto.randomUUID(),
+        text: "Review one lecture topic",
+        done: false,
+      },
+      {
+        id: crypto.randomUUID(),
+        text: "Complete 3 practice questions",
+        done: false,
+      },
+      {
+        id: crypto.randomUUID(),
+        text: "Write a 5-minute reflection",
+        done: false,
+      },
+    ],
+  });
+});
+
 const STORAGE_KEYS = {
   goal: "shiba-goal",
   goals: "shiba-goals",
@@ -227,27 +249,7 @@ const [checkedInDates, setCheckedInDates] = useState(() => {
   const [taskInput, setTaskInput] = useState("");
   const [showCarryOverPrompt, setShowCarryOverPrompt] = useState(false);
 
-  const [tasksByDate, setTasksByDate] = useState(() => {
-  return loadJSON(STORAGE_KEYS.tasksByDate, {
-    [todayKey]: [
-      {
-        id: crypto.randomUUID(),
-        text: "Review one lecture topic",
-        done: false,
-      },
-      {
-        id: crypto.randomUUID(),
-        text: "Complete 3 practice questions",
-        done: false,
-      },
-      {
-        id: crypto.randomUUID(),
-        text: "Write a 5-minute reflection",
-        done: false,
-      },
-    ],
-  });
-});
+ 
 
 <section className="card">
   <h2>Desktop Assistant</h2>
