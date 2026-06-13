@@ -36,7 +36,31 @@ function loadState() {
   }
 }
 
-let state = loadState();
+let state = {
+  tasks: [],
+  currentTaskId: null,
+  timer: {
+    selectedMinutes: 25,
+    remainingSeconds: 25 * 60,
+    isRunning: false,
+  },
+};
+
+app.use(express.json());
+
+app.get("/api/state", (req, res) => {
+  res.json(state);
+});
+
+app.patch("/api/state", (req, res) => {
+  state = {
+    ...state,
+    ...req.body,
+  };
+
+  console.log("State updated:", state);
+  res.json(state);
+});
 
 function saveState() {
   state.updatedAt = new Date().toISOString();
@@ -89,6 +113,16 @@ app.put("/api/tasks", (req, res) => {
 
 // 更新某个任务的完成状态
 app.patch("/api/tasks/:taskId", (req, res) => {
+  const updates = req.body;
+
+  state = {
+    ...state,
+    ...updates,
+  };
+
+  console.log("State updated:", state);
+  res.json(state);
+
   const task = state.tasks.find(
     (item) => item.id === req.params.taskId
   );
