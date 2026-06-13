@@ -2,32 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
 import "./App.css";
-import {
-  getSharedState,
-  publishTodayTasks,
-} from "./shibaApi";
-
- const [tasksByDate, setTasksByDate] = useState(() => {
-  return loadJSON(STORAGE_KEYS.tasksByDate, {
-    [todayKey]: [
-      {
-        id: crypto.randomUUID(),
-        text: "Review one lecture topic",
-        done: false,
-      },
-      {
-        id: crypto.randomUUID(),
-        text: "Complete 3 practice questions",
-        done: false,
-      },
-      {
-        id: crypto.randomUUID(),
-        text: "Write a 5-minute reflection",
-        done: false,
-      },
-    ],
-  });
-});
+import { getSharedState, publishTodayTasks } from "./shibaApi";
 
 const STORAGE_KEYS = {
   goal: "shiba-goal",
@@ -39,6 +14,14 @@ const STORAGE_KEYS = {
   posts: "shiba-posts",
   carryOverDismissedDate: "shiba-carry-over-dismissed-date",
 };
+
+function createId() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
 
 function loadString(key, fallbackValue) {
   const saved = localStorage.getItem(key);
@@ -86,6 +69,7 @@ function addDays(dateKey, amount) {
 
 function formatDisplayDate(dateKey) {
   const date = getDateFromKey(dateKey);
+
   return date.toLocaleDateString("en-SG", {
     weekday: "short",
     month: "short",
@@ -101,13 +85,14 @@ function getDateLabel(dateKey) {
   if (dateKey === todayKey) return "Today";
   if (dateKey === yesterdayKey) return "Yesterday";
   if (dateKey === tomorrowKey) return "Tomorrow";
+
   return formatDisplayDate(dateKey);
 }
 
 function createDateRange(centerDateKey, range = 3) {
   const dates = [];
 
-  for (let i = -range; i <= range; i++) {
+  for (let i = -range; i <= range; i += 1) {
     dates.push(addDays(centerDateKey, i));
   }
 
@@ -131,293 +116,355 @@ function calculateCurrentStreak(checkedInDates, todayKey) {
   return streakCount;
 }
 
+function createDefaultTasks(goalId) {
+  return [
+    {
+      id: createId(),
+      goalId,
+      text: "Review one lecture topic",
+      done: false,
+    },
+    {
+      id: createId(),
+      goalId,
+      text: "Complete 3 practice questions",
+      done: false,
+    },
+    {
+      id: createId(),
+      goalId,
+      text: "Write a 5-minute reflection",
+      done: false,
+    },
+  ];
+}
+
+function formatTimer(totalSeconds = 0) {
+  const safeTotal = Number.isFinite(Number(totalSeconds))
+    ? Math.max(0, Math.floor(Number(totalSeconds)))
+    : 0;
+
+  const minutes = Math.floor(safeTotal / 60);
+  const seconds = safeTotal % 60;
+
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
+    2,
+    "0",
+  )}`;
+}
+
 function App() {
-  const [deviceState, setDeviceState] = useState(null);
-  const [syncError, setSyncError] = useState("");
-
-  const todayTasks = useMemo(
-    () => tasksByDate[todayKey] ?? [],
-    [tasksByDate, todayKey]
-  );
-
   const todayKey = getDateKey(new Date());
 
-  const [goalInput, setGoalInput] = useState("");
+  // --------------------------------------------------
+  // State hooks: keep all hooks inside App and at top level
+  // --------------------------------------------------
 
-const [goals, setGoals] = useState(() => {
-  const savedGoals = loadJSON(STORAGE_KEYS.goals, null);
-  if (Array.isArray(savedGoals) && savedGoals.length > 0) {
+  const [deviceState, setDeviceState] = useState(null);
+  const [taskSyncError, setTaskSyncError] = useState("");
+  const [deviceSyncError, setDeviceSyncError] = useState("");
+
+  const [goalInput, setGoalInput] = useState("");
+  const [goals, setGoals] = useState(() => {
+    const savedGoals = loadJSON(STORAGE_KEYS.goals, null);
+
+    if (Array.isArray(savedGoals) && savedGoals.length > 0) {
       return savedGoals;
     }
-  const savedGoalTitle = loadString(
-      STORAGE_KEYS.goal,
-      "Prepare for Finals"
-    );
-  return [
+
+    const savedGoalTitle = loadString(STORAGE_KEYS.goal, "Prepare for Finals");
+
+    return [
       {
-        id: crypto.randomUUID(),
+        id: createId(),
         title: savedGoalTitle,
       },
     ];
   });
+
   const [activeGoalId, setActiveGoalId] = useState(() => {
     return loadString(STORAGE_KEYS.activeGoalId, "");
   });
-   const activeGoal =
-    goals.find((goalItem) => goalItem.id === activeGoalId) || goals[0];
 
-  const goal = activeGoal?.title || "Prepare for Finals";
+  const initialGoalId =
+    goals.find((goalItem) => goalItem.id === activeGoalId)?.id ?? goals[0]?.id;
 
-useEffect(() => {
-  const uploadTasks = async () => {
-    try {
-      await publishTodayTasks(
-        todayTasks.map((task) => ({
-          id: task.id,
-          text: task.text,
-          done: task.done,
-          goalId: task.goalId ?? null,
-        }))
-      );
+  const [tasksByDate, setTasksByDate] = useState(() => {
+    const savedTasksByDate = loadJSON(STORAGE_KEYS.tasksByDate, null);
 
-      setSyncError("");
-    } catch (error) {
-      console.error("Task sync failed:", error);
-      setSyncError("Unable to sync tasks");
+    if (
+      savedTasksByDate &&
+      typeof savedTasksByDate === "object" &&
+      !Array.isArray(savedTasksByDate)
+    ) {
+      return savedTasksByDate;
     }
-  };
 
-  uploadTasks();
-}, [todayTasks]);
+    return {
+      [todayKey]: createDefaultTasks(initialGoalId),
+    };
+  });
 
-useEffect(() => {
-  let cancelled = false;
+  const [bonePoints, setBonePoints] = useState(() => {
+    return loadNumber(STORAGE_KEYS.bonePoints, 35);
+  });
 
-  const fetchDeviceState = async () => {
-    try {
-      const data = await getSharedState();
-
-      if (!cancelled) {
-        setDeviceState(data);
-        setSyncError("");
-      }
-    } catch (error) {
-      console.error("Device state sync failed:", error);
-
-      if (!cancelled) {
-        setSyncError("Desktop assistant offline");
-      }
-    }
-  };
-
-  fetchDeviceState();
-
-  const intervalId = setInterval(
-    fetchDeviceState,
-    1000
-  );
-
-  return () => {
-    cancelled = true;
-    clearInterval(intervalId);
-  };
-}, []);
-
-function formatTimer(totalSeconds = 0) {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-
-  return `${String(minutes).padStart(2, "0")}:${String(
-    seconds
-  ).padStart(2, "0")}`;
-}
-
-const [bonePoints, setBonePoints] = useState(() => {
-  return loadNumber(STORAGE_KEYS.bonePoints, 35);
-});
-
-const [checkedInDates, setCheckedInDates] = useState(() => {
-  return loadJSON(STORAGE_KEYS.checkedInDates, []);
-});
-
-  const streak = useMemo(() => {
-   return calculateCurrentStreak(checkedInDates, todayKey);
-  }, [checkedInDates, todayKey]);
+  const [checkedInDates, setCheckedInDates] = useState(() => {
+    const savedDates = loadJSON(STORAGE_KEYS.checkedInDates, []);
+    return Array.isArray(savedDates) ? savedDates : [];
+  });
 
   const [selectedDate, setSelectedDate] = useState(todayKey);
   const [customDate, setCustomDate] = useState(todayKey);
   const [taskInput, setTaskInput] = useState("");
   const [showCarryOverPrompt, setShowCarryOverPrompt] = useState(false);
 
- 
-
-<section className="card">
-  <h2>Desktop Assistant</h2>
-
-  {syncError && (
-    <p className="error-text">{syncError}</p>
-  )}
-
-  {!deviceState ? (
-    <p>Connecting...</p>
-  ) : (
-    <>
-      <p>
-        Current task:{" "}
-        <strong>
-          {deviceState.tasks.find(
-            (task) =>
-              task.id === deviceState.currentTaskId
-          )?.text ?? "No task selected"}
-        </strong>
-      </p>
-
-      <p>
-        Pomodoro:{" "}
-        <strong>
-          {formatTimer(
-            deviceState.timer.remainingSeconds
-          )}
-        </strong>
-      </p>
-
-      <p>
-        Status:{" "}
-        <strong>{deviceState.timer.status}</strong>
-      </p>
-    </>
-  )}
-</section>
-
-  useEffect(() => {
-  const fallbackGoalId = activeGoal?.id;
-
-  if (!fallbackGoalId) {
-    return;
-  }
-
-  setTasksByDate((current) => {
-    let changed = false;
-
-    const updatedTasksByDate = Object.fromEntries(
-      Object.entries(current).map(([dateKey, tasks]) => [
-        dateKey,
-        tasks.map((task) => {
-          if (task.goalId) {
-            return task;
-          }
-
-          changed = true;
-
-          return {
-            ...task,
-            goalId: fallbackGoalId,
-          };
-        }),
-      ])
-    );
-
-    return changed ? updatedTasksByDate : current;
-  });
-  }, [activeGoal?.id]);
-
   const [posts, setPosts] = useState(() => {
-  return loadJSON(STORAGE_KEYS.posts, [
-    {
-      id: crypto.randomUUID(),
-      name: "Mochi",
-      text: "Checked in today! Our Dog Circle is getting stronger 🐶",
-    },
-    {
-      id: crypto.randomUUID(),
-      name: "Bao",
-      text: "Almost skipped my task, but the streak reminder helped.",
-    },
-  ]);
-});
+    const savedPosts = loadJSON(STORAGE_KEYS.posts, null);
+
+    if (Array.isArray(savedPosts)) {
+      return savedPosts;
+    }
+
+    return [
+      {
+        id: createId(),
+        name: "Mochi",
+        text: "Checked in today! Our Dog Circle is getting stronger 🐶",
+      },
+      {
+        id: createId(),
+        name: "Bao",
+        text: "Almost skipped my task, but the streak reminder helped.",
+      },
+    ];
+  });
+
+  // --------------------------------------------------
+  // Derived values
+  // --------------------------------------------------
+
+  const activeGoal =
+    goals.find((goalItem) => goalItem.id === activeGoalId) ?? goals[0];
+
+  const goal = activeGoal?.title ?? "Prepare for Finals";
+
+  const todayTasks = useMemo(() => {
+    const tasks = tasksByDate[todayKey];
+    return Array.isArray(tasks) ? tasks : [];
+  }, [tasksByDate, todayKey]);
+
+  const selectedTasks = useMemo(() => {
+    const tasks = tasksByDate[selectedDate];
+    return Array.isArray(tasks) ? tasks : [];
+  }, [tasksByDate, selectedDate]);
 
   const visibleDates = useMemo(() => {
     return createDateRange(selectedDate, 3);
   }, [selectedDate]);
 
-  const selectedTasks = tasksByDate[selectedDate] || [];
+  const streak = useMemo(() => {
+    return calculateCurrentStreak(checkedInDates, todayKey);
+  }, [checkedInDates, todayKey]);
+
+  const goalProgressList = useMemo(() => {
+    const allTasks = Object.values(tasksByDate).flatMap((tasks) => {
+      return Array.isArray(tasks) ? tasks : [];
+    });
+
+    return goals.map((goalItem) => {
+      const relatedTasks = allTasks.filter(
+        (task) => task.goalId === goalItem.id,
+      );
+
+      const completedTasks = relatedTasks.filter((task) => task.done).length;
+      const totalTasks = relatedTasks.length;
+      const progressPercent =
+        totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+
+      return {
+        ...goalItem,
+        completed: completedTasks,
+        total: totalTasks,
+        progressPercent,
+      };
+    });
+  }, [goals, tasksByDate]);
+
   const completedCount = selectedTasks.filter((task) => task.done).length;
   const totalCount = selectedTasks.length;
   const hasCheckedInToday = checkedInDates.includes(todayKey);
 
   const yesterdayKey = addDays(todayKey, -1);
-  const yesterdayUnfinishedCount = (tasksByDate[yesterdayKey] || []).filter(
-  (task) => !task.done
+  const yesterdayTasks = Array.isArray(tasksByDate[yesterdayKey])
+    ? tasksByDate[yesterdayKey]
+    : [];
+  const yesterdayUnfinishedCount = yesterdayTasks.filter(
+    (task) => !task.done,
   ).length;
 
-  const goalProgressList = useMemo(() => {
-  const allTasks = Object.values(tasksByDate).flat();
+  const deviceTasks = Array.isArray(deviceState?.tasks)
+    ? deviceState.tasks
+    : [];
+  const currentDeviceTask = deviceTasks.find(
+    (task) => task.id === deviceState?.currentTaskId,
+  );
+  const deviceTimer = deviceState?.timer ?? {};
 
-  return goals.map((goalItem) => {
-    const relatedTasks = allTasks.filter(
-      (task) => task.goalId === goalItem.id
-    );
+  const syncError = taskSyncError || deviceSyncError;
 
-    const completedTasks = relatedTasks.filter((task) => task.done).length;
-    const totalTasks = relatedTasks.length;
-    const progressPercent =
-      totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
-
-    return {
-      ...goalItem,
-      completed: completedTasks,
-      total: totalTasks,
-      progressPercent,
-    };
-  });
-}, [goals, tasksByDate]);
+  // --------------------------------------------------
+  // Effects
+  // --------------------------------------------------
 
   useEffect(() => {
-  localStorage.setItem(STORAGE_KEYS.goals, JSON.stringify(goals));
-}, [goals]);
+    const fallbackGoalId = activeGoal?.id;
 
-useEffect(() => {
-  if (!activeGoal?.id) {
-    return;
-  }
+    if (!fallbackGoalId) {
+      return;
+    }
 
-  localStorage.setItem(STORAGE_KEYS.activeGoalId, activeGoal.id);
-  localStorage.setItem(STORAGE_KEYS.goal, goal);
-}, [activeGoal?.id, goal]);
+    setTasksByDate((current) => {
+      let changed = false;
 
-useEffect(() => {
-  localStorage.setItem(STORAGE_KEYS.bonePoints, String(bonePoints));
-}, [bonePoints]);
+      const updatedTasksByDate = Object.fromEntries(
+        Object.entries(current).map(([dateKey, tasks]) => {
+          const safeTasks = Array.isArray(tasks) ? tasks : [];
 
-useEffect(() => {
-  localStorage.setItem(
-    STORAGE_KEYS.checkedInDates,
-    JSON.stringify(checkedInDates)
-  );
-}, [checkedInDates]);
+          return [
+            dateKey,
+            safeTasks.map((task) => {
+              if (task.goalId) {
+                return task;
+              }
 
-useEffect(() => {
-  localStorage.setItem(
-    STORAGE_KEYS.tasksByDate,
-    JSON.stringify(tasksByDate)
-  );
-}, [tasksByDate]);
+              changed = true;
 
-useEffect(() => {
-  localStorage.setItem(STORAGE_KEYS.posts, JSON.stringify(posts));
-}, [posts]);
+              return {
+                ...task,
+                goalId: fallbackGoalId,
+              };
+            }),
+          ];
+        }),
+      );
 
-useEffect(() => {
-  const dismissedDate = localStorage.getItem(
-    STORAGE_KEYS.carryOverDismissedDate
-  );
+      return changed ? updatedTasksByDate : current;
+    });
+  }, [activeGoal?.id]);
 
-  if (yesterdayUnfinishedCount > 0 && dismissedDate !== todayKey) {
-    setShowCarryOverPrompt(true);
-  } else {
-    setShowCarryOverPrompt(false);
-  }
-}, [yesterdayUnfinishedCount, todayKey]);
+  useEffect(() => {
+    let cancelled = false;
+
+    const uploadTasks = async () => {
+      try {
+        await publishTodayTasks(
+          todayTasks.map((task) => ({
+            id: task.id,
+            text: task.text,
+            done: Boolean(task.done),
+            goalId: task.goalId ?? null,
+          })),
+        );
+
+        if (!cancelled) {
+          setTaskSyncError("");
+        }
+      } catch (error) {
+        console.error("Task sync failed:", error);
+
+        if (!cancelled) {
+          setTaskSyncError("Unable to sync today's tasks");
+        }
+      }
+    };
+
+    uploadTasks();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [todayTasks]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchDeviceState = async () => {
+      try {
+        const data = await getSharedState();
+
+        if (!data || typeof data !== "object") {
+          throw new Error("The API returned an invalid shared state.");
+        }
+
+        if (!cancelled) {
+          setDeviceState(data);
+          setDeviceSyncError("");
+        }
+      } catch (error) {
+        console.error("Device state sync failed:", error);
+
+        if (!cancelled) {
+          setDeviceSyncError("Desktop assistant offline");
+        }
+      }
+    };
+
+    fetchDeviceState();
+
+    const intervalId = window.setInterval(fetchDeviceState, 1000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.goals, JSON.stringify(goals));
+  }, [goals]);
+
+  useEffect(() => {
+    if (!activeGoal?.id) {
+      return;
+    }
+
+    localStorage.setItem(STORAGE_KEYS.activeGoalId, activeGoal.id);
+    localStorage.setItem(STORAGE_KEYS.goal, goal);
+  }, [activeGoal?.id, goal]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.bonePoints, String(bonePoints));
+  }, [bonePoints]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      STORAGE_KEYS.checkedInDates,
+      JSON.stringify(checkedInDates),
+    );
+  }, [checkedInDates]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.tasksByDate, JSON.stringify(tasksByDate));
+  }, [tasksByDate]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.posts, JSON.stringify(posts));
+  }, [posts]);
+
+  useEffect(() => {
+    const dismissedDate = localStorage.getItem(
+      STORAGE_KEYS.carryOverDismissedDate,
+    );
+
+    setShowCarryOverPrompt(
+      yesterdayUnfinishedCount > 0 && dismissedDate !== todayKey,
+    );
+  }, [yesterdayUnfinishedCount, todayKey]);
+
+  // --------------------------------------------------
+  // Event handlers
+  // --------------------------------------------------
 
   function createGoal() {
     const trimmedGoal = goalInput.trim();
@@ -427,127 +474,135 @@ useEffect(() => {
     }
 
     const newGoal = {
-      id: crypto.randomUUID(),
+      id: createId(),
       title: trimmedGoal,
     };
 
-    setGoals((currentGoals) => [...currentGoals, newGoal]);
-    setActiveGoalId(newGoal.id);
-
     const suggestedTasks = [
       {
-        id: crypto.randomUUID(),
+        id: createId(),
         goalId: newGoal.id,
         text: `Break "${trimmedGoal}" into smaller steps`,
         done: false,
       },
       {
-        id: crypto.randomUUID(),
+        id: createId(),
         goalId: newGoal.id,
         text: `Complete one small action for "${trimmedGoal}"`,
         done: false,
       },
       {
-        id: crypto.randomUUID(),
+        id: createId(),
         goalId: newGoal.id,
         text: "Check in before the day ends",
         done: false,
       },
     ];
 
+    setGoals((currentGoals) => [...currentGoals, newGoal]);
+    setActiveGoalId(newGoal.id);
     setTasksByDate((current) => ({
       ...current,
-      [selectedDate]: [...(current[selectedDate] || []), ...suggestedTasks],
+      [selectedDate]: [
+        ...(Array.isArray(current[selectedDate]) ? current[selectedDate] : []),
+        ...suggestedTasks,
+      ],
     }));
-
     setGoalInput("");
   }
 
   function addTask() {
     const trimmedTask = taskInput.trim();
 
-    if (trimmedTask === "") {
+    if (trimmedTask === "" || !activeGoal?.id) {
       return;
     }
 
     const newTask = {
-      id: crypto.randomUUID(),
-      goalId: activeGoal?.id,
+      id: createId(),
+      goalId: activeGoal.id,
       text: trimmedTask,
       done: false,
     };
 
     setTasksByDate((current) => ({
       ...current,
-      [selectedDate]: [...(current[selectedDate] || []), newTask],
+      [selectedDate]: [
+        ...(Array.isArray(current[selectedDate]) ? current[selectedDate] : []),
+        newTask,
+      ],
     }));
 
     setTaskInput("");
   }
 
   function toggleTask(taskId) {
+    const taskToToggle = selectedTasks.find((task) => task.id === taskId);
+
+    if (!taskToToggle) {
+      return;
+    }
+
     setTasksByDate((current) => {
-      const currentTasks = current[selectedDate] || [];
-
-      const updatedTasks = currentTasks.map((task) => {
-        if (task.id !== taskId) return task;
-
-        if (!task.done) {
-          setBonePoints((points) => points + 5);
-        } else {
-          setBonePoints((points) => Math.max(0, points - 5));
-        }
-
-        return {
-          ...task,
-          done: !task.done,
-        };
-      });
+      const currentTasks = Array.isArray(current[selectedDate])
+        ? current[selectedDate]
+        : [];
 
       return {
         ...current,
-        [selectedDate]: updatedTasks,
+        [selectedDate]: currentTasks.map((task) => {
+          return task.id === taskId
+            ? {
+                ...task,
+                done: !task.done,
+              }
+            : task;
+        }),
       };
+    });
+
+    setBonePoints((points) => {
+      return taskToToggle.done ? Math.max(0, points - 5) : points + 5;
     });
   }
 
   function deleteTask(taskId) {
     setTasksByDate((current) => {
-      const updatedTasks = (current[selectedDate] || []).filter(
-        (task) => task.id !== taskId
-      );
+      const currentTasks = Array.isArray(current[selectedDate])
+        ? current[selectedDate]
+        : [];
 
       return {
         ...current,
-        [selectedDate]: updatedTasks,
+        [selectedDate]: currentTasks.filter((task) => task.id !== taskId),
       };
     });
   }
 
   function moveTaskToTomorrow(taskId) {
-    const tomorrow = new Date(selectedDate);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowKey = getDateKey(tomorrow);
-
+    const tomorrowKey = addDays(selectedDate, 1);
     const taskToMove = selectedTasks.find((task) => task.id === taskId);
 
-    if (!taskToMove) return;
+    if (!taskToMove) {
+      return;
+    }
 
     setTasksByDate((current) => {
-      const currentDateTasks = (current[selectedDate] || []).filter(
-        (task) => task.id !== taskId
-      );
-
-      const tomorrowTasks = current[tomorrowKey] || [];
+      const currentDateTasks = Array.isArray(current[selectedDate])
+        ? current[selectedDate]
+        : [];
+      const tomorrowTasks = Array.isArray(current[tomorrowKey])
+        ? current[tomorrowKey]
+        : [];
 
       return {
         ...current,
-        [selectedDate]: currentDateTasks,
+        [selectedDate]: currentDateTasks.filter((task) => task.id !== taskId),
         [tomorrowKey]: [
           ...tomorrowTasks,
           {
             ...taskToMove,
-            id: crypto.randomUUID(),
+            id: createId(),
             done: false,
           },
         ],
@@ -556,86 +611,94 @@ useEffect(() => {
   }
 
   function completeDailyCheckIn() {
-  if (selectedDate !== todayKey) {
-    alert("You can only complete check-in for today.");
-    return;
-  }
+    if (selectedDate !== todayKey) {
+      window.alert("You can only complete check-in for today.");
+      return;
+    }
 
-  if (checkedInDates.includes(todayKey)) {
-    alert("You have already checked in today.");
-    return;
-  }
+    if (checkedInDates.includes(todayKey)) {
+      window.alert("You have already checked in today.");
+      return;
+    }
 
-  if (selectedTasks.length === 0) {
-    alert("Add at least one task before checking in.");
-    return;
-  }
+    if (selectedTasks.length === 0) {
+      window.alert("Add at least one task before checking in.");
+      return;
+    }
 
-  const allDone = selectedTasks.every((task) => task.done);
+    const allDone = selectedTasks.every((task) => task.done);
 
-  if (!allDone) {
-    alert("Finish all today's tasks or move unfinished tasks to tomorrow.");
-    return;
-  }
+    if (!allDone) {
+      window.alert(
+        "Finish all today's tasks or move unfinished tasks to tomorrow.",
+      );
+      return;
+    }
 
-  const updatedCheckedInDates = [...checkedInDates, todayKey];
-  const newStreak = calculateCurrentStreak(updatedCheckedInDates, todayKey);
+    const updatedCheckedInDates = [...checkedInDates, todayKey];
+    const newStreak = calculateCurrentStreak(updatedCheckedInDates, todayKey);
 
-  setCheckedInDates(updatedCheckedInDates);
-  setBonePoints((points) => points + 20);
-
-  const newPost = {
-    id: crypto.randomUUID(),
-    name: "You",
-    text: `Completed today's plan for "${goal}"! Current streak: ${newStreak} days 🦴`,
-  };
-
-  setPosts((currentPosts) => [newPost, ...currentPosts]);
+    setCheckedInDates(updatedCheckedInDates);
+    setBonePoints((points) => points + 20);
+    setPosts((currentPosts) => [
+      {
+        id: createId(),
+        name: "You",
+        text: `Completed today's plan for "${goal}"! Current streak: ${newStreak} days 🦴`,
+      },
+      ...currentPosts,
+    ]);
   }
 
   function moveYesterdayTasksToToday() {
-  setTasksByDate((current) => {
-    const yesterdayTasks = current[yesterdayKey] || [];
-    const todayTasks = current[todayKey] || [];
+    setTasksByDate((current) => {
+      const currentYesterdayTasks = Array.isArray(current[yesterdayKey])
+        ? current[yesterdayKey]
+        : [];
+      const currentTodayTasks = Array.isArray(current[todayKey])
+        ? current[todayKey]
+        : [];
 
-    const unfinishedYesterdayTasks = yesterdayTasks.filter(
-      (task) => !task.done
-    );
+      const unfinishedYesterdayTasks = currentYesterdayTasks.filter(
+        (task) => !task.done,
+      );
+      const remainingYesterdayTasks = currentYesterdayTasks.filter(
+        (task) => task.done,
+      );
 
-    const remainingYesterdayTasks = yesterdayTasks.filter(
-      (task) => task.done
-    );
+      if (unfinishedYesterdayTasks.length === 0) {
+        return current;
+      }
 
-    if (unfinishedYesterdayTasks.length === 0) {
-      return current;
+      const carriedOverTasks = unfinishedYesterdayTasks.map((task) => ({
+        ...task,
+        id: createId(),
+        done: false,
+      }));
+
+      return {
+        ...current,
+        [yesterdayKey]: remainingYesterdayTasks,
+        [todayKey]: [...currentTodayTasks, ...carriedOverTasks],
+      };
+    });
+
+    localStorage.setItem(STORAGE_KEYS.carryOverDismissedDate, todayKey);
+    setSelectedDate(todayKey);
+    setCustomDate(todayKey);
+    setShowCarryOverPrompt(false);
+  }
+
+  function dismissCarryOverPrompt() {
+    localStorage.setItem(STORAGE_KEYS.carryOverDismissedDate, todayKey);
+    setShowCarryOverPrompt(false);
+  }
+
+  function jumpToCustomDate() {
+    if (!customDate) {
+      return;
     }
 
-    const carriedOverTasks = unfinishedYesterdayTasks.map((task) => ({
-      ...task,
-      id: crypto.randomUUID(),
-      done: false,
-    }));
-
-    return {
-      ...current,
-      [yesterdayKey]: remainingYesterdayTasks,
-      [todayKey]: [...todayTasks, ...carriedOverTasks],
-    };
-  });
-
-  localStorage.setItem(STORAGE_KEYS.carryOverDismissedDate, todayKey);
-  setSelectedDate(todayKey);
-  setCustomDate(todayKey);
-  setShowCarryOverPrompt(false);
-}
-
-function dismissCarryOverPrompt() {
-  localStorage.setItem(STORAGE_KEYS.carryOverDismissedDate, todayKey);
-  setShowCarryOverPrompt(false);
-}
-
-  
-  function jumpToCustomDate() {
     setSelectedDate(customDate);
   }
 
@@ -645,62 +708,62 @@ function dismissCarryOverPrompt() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35 }}
-  >
-    <AnimatePresence>
-  {showCarryOverPrompt && (
-    <motion.div
-      className="carryover-overlay"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
     >
-      <motion.div
-        className="carryover-modal"
-        initial={{ opacity: 0, scale: 0.9, y: 24 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 24 }}
-        transition={{ duration: 0.25 }}
+      <AnimatePresence>
+        {showCarryOverPrompt && (
+          <motion.div
+            className="carryover-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <motion.div
+              className="carryover-modal"
+              initial={{ opacity: 0, scale: 0.9, y: 24 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 24 }}
+              transition={{ duration: 0.25 }}
+            >
+              <div className="dog-icon">🐶</div>
+              <h2>Move unfinished tasks?</h2>
+              <p>
+                You have {yesterdayUnfinishedCount} unfinished task
+                {yesterdayUnfinishedCount > 1 ? "s" : ""} from yesterday.
+              </p>
+              <p className="small-text">
+                Do you want to move them to today's plan?
+              </p>
+
+              <div className="carryover-actions">
+                <motion.button
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={moveYesterdayTasksToToday}
+                >
+                  Move to Today
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.96 }}
+                  className="secondary-button"
+                  onClick={dismissCarryOverPrompt}
+                >
+                  Not Now
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <motion.header
+        className="hero"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45 }}
       >
-        <div className="dog-icon">🐶</div>
-        <h2>Move unfinished tasks?</h2>
-        <p>
-          You have {yesterdayUnfinishedCount} unfinished task
-          {yesterdayUnfinishedCount > 1 ? "s" : ""} from yesterday.
-        </p>
-        <p className="small-text">
-          Do you want to move them to today's plan?
-        </p>
-
-        <div className="carryover-actions">
-          <motion.button
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
-            onClick={moveYesterdayTasksToToday}
-          >
-            Move to Today
-          </motion.button>
-
-          <motion.button
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
-            className="secondary-button"
-            onClick={dismissCarryOverPrompt}
-          >
-            Not Now
-          </motion.button>
-        </div>
-      </motion.div>
-    </motion.div>
-  )}
-</AnimatePresence>
-
-    <motion.header
-      className="hero"
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45 }}
-    >
         <div>
           <p className="team">team mimimi</p>
           <h1>ShibaSteps 🐕</h1>
@@ -733,13 +796,18 @@ function dismissCarryOverPrompt() {
             <input
               value={goalInput}
               onChange={(event) => setGoalInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  createGoal();
+                }
+              }}
               placeholder="e.g. Prepare for finals"
             />
             <button onClick={createGoal}>Create</button>
           </div>
         </section>
 
-                <section className="card wide">
+        <section className="card wide">
           <h2>Long-term Goals</h2>
           <p className="small-text">
             All long-term goals are listed here. Click a goal to make it the
@@ -794,6 +862,32 @@ function dismissCarryOverPrompt() {
           </div>
         </section>
 
+        <section className="card">
+          <h2>Desktop Assistant</h2>
+
+          {syncError && <p className="error-text">{syncError}</p>}
+
+          {!deviceState ? (
+            <p>Connecting...</p>
+          ) : (
+            <>
+              <p>
+                Current task:{" "}
+                <strong>{currentDeviceTask?.text ?? "No task selected"}</strong>
+              </p>
+
+              <p>
+                Pomodoro:{" "}
+                <strong>{formatTimer(deviceTimer.remainingSeconds)}</strong>
+              </p>
+
+              <p>
+                Status: <strong>{deviceTimer.status ?? "unknown"}</strong>
+              </p>
+            </>
+          )}
+        </section>
+
         <section className="card wide">
           <h2>Date Planner</h2>
           <p className="small-text">
@@ -811,11 +905,13 @@ function dismissCarryOverPrompt() {
 
           <div className="calendar-row">
             {visibleDates.map((dateKey) => {
-              const taskCount = (tasksByDate[dateKey] || []).length;
-              const doneCount = (tasksByDate[dateKey] || []).filter(
-                (task) => task.done
-              ).length;
+              const dateTasks = Array.isArray(tasksByDate[dateKey])
+                ? tasksByDate[dateKey]
+                : [];
+              const taskCount = dateTasks.length;
+              const doneCount = dateTasks.filter((task) => task.done).length;
               const isCheckedIn = checkedInDates.includes(dateKey);
+
               return (
                 <button
                   key={dateKey}
@@ -830,7 +926,7 @@ function dismissCarryOverPrompt() {
                   <span>{getDateLabel(dateKey)}</span>
                   <strong>{formatDisplayDate(dateKey)}</strong>
                   <small>
-                     {doneCount}/{taskCount} done {isCheckedIn ? "🐾" : ""}
+                    {doneCount}/{taskCount} done {isCheckedIn ? "🐾" : ""}
                   </small>
                 </button>
               );
@@ -878,7 +974,7 @@ function dismissCarryOverPrompt() {
                   <label>
                     <input
                       type="checkbox"
-                      checked={task.done}
+                      checked={Boolean(task.done)}
                       onChange={() => toggleTask(task.id)}
                     />
                     <span>{task.text}</span>
@@ -910,10 +1006,10 @@ function dismissCarryOverPrompt() {
             className="checkin"
             onClick={completeDailyCheckIn}
             disabled={selectedDate === todayKey && hasCheckedInToday}
-          > 
+          >
             {selectedDate === todayKey && hasCheckedInToday
               ? "Checked in Today"
-             : "Complete Daily Check-in"}
+              : "Complete Daily Check-in"}
           </button>
         </section>
 
