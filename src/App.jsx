@@ -4,6 +4,8 @@ import { AnimatePresence, motion } from "motion/react";
 import "./App.css";
 import { getSharedState, publishTodayTasks } from "./shibaApi";
 
+const API_BASE =
+  "https://sturdy-computing-machine-4jv7gjxjjx9rc5xwg-3001.app.github.dev";
 const STORAGE_KEYS = {
   goal: "shiba-goal",
   goals: "shiba-goals",
@@ -352,6 +354,51 @@ function App() {
       return changed ? updatedTasksByDate : current;
     });
   }, [activeGoal?.id]);
+
+  useEffect(() => {
+  const todayTasks = Array.isArray(tasksByDate[todayKey])
+    ? tasksByDate[todayKey]
+    : [];
+
+  const syncTasksToBackend = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/state`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tasks: todayTasks.map((task) => ({
+            id: task.id,
+            text: task.text,
+            done: Boolean(task.done),
+            goalId: task.goalId ?? null,
+          })),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+
+        console.error(
+          "Failed to sync tasks:",
+          response.status,
+          errorText,
+        );
+
+        return;
+      }
+
+      const updatedState = await response.json();
+
+      console.log("Tasks synced to backend:", updatedState);
+    } catch (error) {
+      console.error("Cannot connect to backend:", error);
+    }
+  };
+
+  syncTasksToBackend();
+}, [tasksByDate, todayKey]);
 
   useEffect(() => {
     let cancelled = false;
