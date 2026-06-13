@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
 import "./App.css";
+import {
+  getSharedState,
+  publishTodayTasks,
+} from "./shibaApi";
 
 const STORAGE_KEYS = {
   goal: "shiba-goal",
@@ -106,6 +110,14 @@ function calculateCurrentStreak(checkedInDates, todayKey) {
 }
 
 function App() {
+  const [deviceState, setDeviceState] = useState(null);
+  const [syncError, setSyncError] = useState("");
+
+  const todayTasks = useMemo(
+    () => tasksByDate[todayKey] ?? [],
+    [tasksByDate, todayKey]
+  );
+
   const todayKey = getDateKey(new Date());
 
   const [goalInput, setGoalInput] = useState("");
@@ -134,6 +146,69 @@ const [goals, setGoals] = useState(() => {
 
   const goal = activeGoal?.title || "Prepare for Finals";
 
+useEffect(() => {
+  const uploadTasks = async () => {
+    try {
+      await publishTodayTasks(
+        todayTasks.map((task) => ({
+          id: task.id,
+          text: task.text,
+          done: task.done,
+          goalId: task.goalId ?? null,
+        }))
+      );
+
+      setSyncError("");
+    } catch (error) {
+      console.error("Task sync failed:", error);
+      setSyncError("Unable to sync tasks");
+    }
+  };
+
+  uploadTasks();
+}, [todayTasks]);
+
+useEffect(() => {
+  let cancelled = false;
+
+  const fetchDeviceState = async () => {
+    try {
+      const data = await getSharedState();
+
+      if (!cancelled) {
+        setDeviceState(data);
+        setSyncError("");
+      }
+    } catch (error) {
+      console.error("Device state sync failed:", error);
+
+      if (!cancelled) {
+        setSyncError("Desktop assistant offline");
+      }
+    }
+  };
+
+  fetchDeviceState();
+
+  const intervalId = setInterval(
+    fetchDeviceState,
+    1000
+  );
+
+  return () => {
+    cancelled = true;
+    clearInterval(intervalId);
+  };
+}, []);
+
+function formatTimer(totalSeconds = 0) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${String(minutes).padStart(2, "0")}:${String(
+    seconds
+  ).padStart(2, "0")}`;
+}
 
 const [bonePoints, setBonePoints] = useState(() => {
   return loadNumber(STORAGE_KEYS.bonePoints, 35);
@@ -173,6 +248,45 @@ const [checkedInDates, setCheckedInDates] = useState(() => {
     ],
   });
 });
+
+<section className="card">
+  <h2>Desktop Assistant</h2>
+
+  {syncError && (
+    <p className="error-text">{syncError}</p>
+  )}
+
+  {!deviceState ? (
+    <p>Connecting...</p>
+  ) : (
+    <>
+      <p>
+        Current task:{" "}
+        <strong>
+          {deviceState.tasks.find(
+            (task) =>
+              task.id === deviceState.currentTaskId
+          )?.text ?? "No task selected"}
+        </strong>
+      </p>
+
+      <p>
+        Pomodoro:{" "}
+        <strong>
+          {formatTimer(
+            deviceState.timer.remainingSeconds
+          )}
+        </strong>
+      </p>
+
+      <p>
+        Status:{" "}
+        <strong>{deviceState.timer.status}</strong>
+      </p>
+    </>
+  )}
+</section>
+
   useEffect(() => {
   const fallbackGoalId = activeGoal?.id;
 
@@ -602,7 +716,7 @@ function dismissCarryOverPrompt() {
           <div className="dog-icon">🐶</div>
           <h2>Level 3 Shiba</h2>
           <p>{bonePoints} 🦴 Bone Points</p>
-        </div>
+        </motion.div>
       </motion.header>
 
       <main className="layout">
@@ -787,7 +901,7 @@ function dismissCarryOverPrompt() {
                   </div>
                 </div>
               ))}
-            </motion.div>
+            </div>
           )}
 
           <button
