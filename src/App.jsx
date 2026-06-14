@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
 import "./App.css";
@@ -165,10 +165,10 @@ function App() {
   const [deviceState, setDeviceState] = useState(null);
   const [taskSyncError, setTaskSyncError] = useState("");
   const [deviceSyncError, setDeviceSyncError] = useState("");
-
+  const appliedDeviceCompletionIdsRef = useRef(new Set());
   const [goalInput, setGoalInput] = useState("");
   const [goals, setGoals] = useState(() => {
-    const savedGoals = loadJSON(STORAGE_KEYS.goals, null);
+  const savedGoals = loadJSON(STORAGE_KEYS.goals, null);
 
     if (Array.isArray(savedGoals) && savedGoals.length > 0) {
       return savedGoals;
@@ -466,6 +466,66 @@ function App() {
       window.clearInterval(intervalId);
     };
   }, []);
+
+  useEffect(() => {
+  const remotelyCompletedTaskIds = new Set(
+    deviceTasks
+      .filter((task) => Boolean(task.done))
+      .map((task) => task.id),
+  );
+
+  for (const processedTaskId of appliedDeviceCompletionIdsRef.current) {
+    if (!remotelyCompletedTaskIds.has(processedTaskId)) {
+      appliedDeviceCompletionIdsRef.current.delete(processedTaskId);
+    }
+  }
+
+  todayTasks.forEach((task) => {
+    if (task.done && remotelyCompletedTaskIds.has(task.id)) {
+      appliedDeviceCompletionIdsRef.current.add(task.id);
+    }
+  });
+
+  const newlyCompletedTaskIds = todayTasks
+    .filter((task) => {
+      return (
+        !task.done &&
+        remotelyCompletedTaskIds.has(task.id) &&
+        !appliedDeviceCompletionIdsRef.current.has(task.id)
+      );
+    })
+    .map((task) => task.id);
+
+  if (newlyCompletedTaskIds.length === 0) {
+    return;
+  }
+
+  newlyCompletedTaskIds.forEach((taskId) => {
+    appliedDeviceCompletionIdsRef.current.add(taskId);
+  });
+
+  setTasksByDate((current) => {
+    const currentTodayTasks = Array.isArray(current[todayKey])
+      ? current[todayKey]
+      : [];
+
+    return {
+      ...current,
+      [todayKey]: currentTodayTasks.map((task) => {
+        return newlyCompletedTaskIds.includes(task.id)
+          ? {
+              ...task,
+              done: true,
+            }
+          : task;
+      }),
+    };
+  });
+
+  setBonePoints((points) => {
+    return points + newlyCompletedTaskIds.length * 5;
+  });
+}, [deviceState?.tasks, deviceTasks, todayKey, todayTasks]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.goals, JSON.stringify(goals));
