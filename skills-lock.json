@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "skills": {
+    "design-taste-frontend": {
+      "source": "/workspaces/mimimi-map/taste-skill",
+      "sourceType": "local",
+      "computedHash": "6d838b246d0e35d0b53f4f23f98ba7a1dd561937e64f7d0c7553b0928e376c3e"
+    },
+    "redesign-existing-projects": {
+      "source": "/workspaces/mimimi-map/taste-skill",
+      "sourceType": "local",
+      "computedHash": "b405eee0e0e80fc243f731d9aa368bca307e356db7e6157d27101d369dac6726"
+    }
+  }
+}
