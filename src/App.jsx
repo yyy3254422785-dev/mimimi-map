@@ -815,62 +815,62 @@ function App() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35 }}
+  >
+    <AnimatePresence>
+  {showCarryOverPrompt && (
+    <motion.div
+      className="carryover-overlay"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
     >
-      <AnimatePresence>
-        {showCarryOverPrompt && (
-          <motion.div
-            className="carryover-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <motion.div
-              className="carryover-modal"
-              initial={{ opacity: 0, scale: 0.9, y: 24 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 24 }}
-              transition={{ duration: 0.25 }}
-            >
-              <div className="dog-icon">🐶</div>
-              <h2>Move unfinished tasks?</h2>
-              <p>
-                You have {yesterdayUnfinishedCount} unfinished task
-                {yesterdayUnfinishedCount > 1 ? "s" : ""} from yesterday.
-              </p>
-              <p className="small-text">
-                Do you want to move them to today's plan?
-              </p>
-
-              <div className="carryover-actions">
-                <motion.button
-                  whileHover={{ scale: 1.04 }}
-                  whileTap={{ scale: 0.96 }}
-                  onClick={moveYesterdayTasksToToday}
-                >
-                  Move to Today
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.04 }}
-                  whileTap={{ scale: 0.96 }}
-                  className="secondary-button"
-                  onClick={dismissCarryOverPrompt}
-                >
-                  Not Now
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <motion.header
-        className="hero"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45 }}
+      <motion.div
+        className="carryover-modal"
+        initial={{ opacity: 0, scale: 0.9, y: 24 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 24 }}
+        transition={{ duration: 0.25 }}
       >
+        <div className="dog-icon">🐶</div>
+        <h2>Move unfinished tasks?</h2>
+        <p>
+          You have {yesterdayUnfinishedCount} unfinished task
+          {yesterdayUnfinishedCount > 1 ? "s" : ""} from yesterday.
+        </p>
+        <p className="small-text">
+          Do you want to move them to today's plan?
+        </p>
+
+        <div className="carryover-actions">
+          <motion.button
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            onClick={moveYesterdayTasksToToday}
+          >
+            Move to Today
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            className="secondary-button"
+            onClick={dismissCarryOverPrompt}
+          >
+            Not Now
+          </motion.button>
+        </div>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
+
+    <motion.header
+      className="hero"
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45 }}
+    >
         <div>
           <p className="team">team mimimi</p>
           <h1>ShibaSteps 🐕</h1>
@@ -888,7 +888,7 @@ function App() {
           <div className="dog-icon">🐶</div>
           <h2>Level 3 Shiba</h2>
           <p>{bonePoints} 🦴 Bone Points</p>
-        </motion.div>
+        </div>
       </motion.header>
 
       <main className="layout">
@@ -903,18 +903,13 @@ function App() {
             <input
               value={goalInput}
               onChange={(event) => setGoalInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  createGoal();
-                }
-              }}
               placeholder="e.g. Prepare for finals"
             />
             <button onClick={createGoal}>Create</button>
           </div>
         </section>
 
-        <section className="card wide">
+                <section className="card wide">
           <h2>Long-term Goals</h2>
           <p className="small-text">
             All long-term goals are listed here. Click a goal to make it the
@@ -969,32 +964,6 @@ function App() {
           </div>
         </section>
 
-        <section className="card">
-          <h2>Desktop Assistant</h2>
-
-          {syncError && <p className="error-text">{syncError}</p>}
-
-          {!deviceState ? (
-            <p>Connecting...</p>
-          ) : (
-            <>
-              <p>
-                Current task:{" "}
-                <strong>{currentDeviceTask?.text ?? "No task selected"}</strong>
-              </p>
-
-              <p>
-                Pomodoro:{" "}
-                <strong>{formatTimer(deviceTimer.remainingSeconds)}</strong>
-              </p>
-
-              <p>
-                Status: <strong>{deviceTimer.status ?? "unknown"}</strong>
-              </p>
-            </>
-          )}
-        </section>
-
         <section className="card wide">
           <h2>Date Planner</h2>
           <p className="small-text">
@@ -1012,13 +981,11 @@ function App() {
 
           <div className="calendar-row">
             {visibleDates.map((dateKey) => {
-              const dateTasks = Array.isArray(tasksByDate[dateKey])
-                ? tasksByDate[dateKey]
-                : [];
-              const taskCount = dateTasks.length;
-              const doneCount = dateTasks.filter((task) => task.done).length;
+              const taskCount = (tasksByDate[dateKey] || []).length;
+              const doneCount = (tasksByDate[dateKey] || []).filter(
+                (task) => task.done
+              ).length;
               const isCheckedIn = checkedInDates.includes(dateKey);
-
               return (
                 <button
                   key={dateKey}
@@ -1033,7 +1000,7 @@ function App() {
                   <span>{getDateLabel(dateKey)}</span>
                   <strong>{formatDisplayDate(dateKey)}</strong>
                   <small>
-                    {doneCount}/{taskCount} done {isCheckedIn ? "🐾" : ""}
+                     {doneCount}/{taskCount} done {isCheckedIn ? "🐾" : ""}
                   </small>
                 </button>
               );
@@ -1050,24 +1017,21 @@ function App() {
               </p>
             </div>
 
-            <div className="progress-pill">
-              {completedCount}/{totalCount} completed
-            </div>
-          </div>
-
-          <div className="input-row">
-            <input
-              value={taskInput}
-              onChange={(event) => setTaskInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  addTask();
-                }
-              }}
-              placeholder="Add a plan for this date"
-            />
-            <button onClick={addTask}>Add Task</button>
-          </div>
+              <div className="input-row compact">
+                <input
+                  value={taskInput}
+                  onChange={(event) => setTaskInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      addTask();
+                    }
+                  }}
+                  placeholder="Add a new task"
+                />
+                <button onClick={addTask} className="primary-button">
+                  Add
+                </button>
+              </div>
 
           {selectedTasks.length === 0 ? (
             <div className="empty-state">
@@ -1081,21 +1045,22 @@ function App() {
                   <label>
                     <input
                       type="checkbox"
-                      checked={Boolean(task.done)}
+                      checked={task.done}
                       onChange={() => toggleTask(task.id)}
                     />
                     <span>{task.text}</span>
                   </label>
 
-                  <div className="task-actions">
-                    {!task.done && (
-                      <button
-                        className="secondary-button"
-                        onClick={() => moveTaskToTomorrow(task.id)}
-                      >
-                        Move to Tomorrow
-                      </button>
-                    )}
+                      <div className="task-actions-compact">
+                        {!task.done && (
+                          <button
+                            className="action-button"
+                            title="Move to tomorrow"
+                            onClick={() => moveTaskToTomorrow(task.id)}
+                          >
+                            ↓
+                          </button>
+                        )}
 
                     <button
                       className="danger-button"
@@ -1106,17 +1071,17 @@ function App() {
                   </div>
                 </div>
               ))}
-            </div>
+            </motion.div>
           )}
 
           <button
             className="checkin"
             onClick={completeDailyCheckIn}
             disabled={selectedDate === todayKey && hasCheckedInToday}
-          >
+          > 
             {selectedDate === todayKey && hasCheckedInToday
               ? "Checked in Today"
-              : "Complete Daily Check-in"}
+             : "Complete Daily Check-in"}
           </button>
         </section>
 
@@ -1131,16 +1096,92 @@ function App() {
             <strong>Circle Points: {bonePoints + streak * 10}</strong>
           </div>
 
-          <div className="feed">
-            {posts.map((post) => (
-              <div className="post" key={post.id}>
-                <strong>{post.name}</strong>
-                <p>{post.text}</p>
+              <div className="calendar-grid">
+                {visibleDates.map((dateKey) => {
+                  const taskCount = (tasksByDate[dateKey] || []).length;
+                  const doneCount = (tasksByDate[dateKey] || []).filter(
+                    (task) => task.done
+                  ).length;
+                  const isCheckedIn = checkedInDates.includes(dateKey);
+                  return (
+                    <motion.button
+                      key={dateKey}
+                      className={`calendar-day ${dateKey === selectedDate ? "active" : ""} ${isCheckedIn ? "checked-in" : ""}`}
+                      onClick={() => {
+                        setSelectedDate(dateKey);
+                        setCustomDate(dateKey);
+                      }}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <span className="day-label">{getDateLabel(dateKey)}</span>
+                      <strong className="day-date">{formatDisplayDate(dateKey)}</strong>
+                      <small className="day-progress">
+                        {doneCount}/{taskCount} {isCheckedIn ? "🐾" : ""}
+                      </small>
+                    </motion.button>
+                  );
+                })}
               </div>
-            ))}
+            </motion.section>
           </div>
-        </section>
-      </main>
+
+          {/* Right Column: Goals & Feed */}
+          <div className="dashboard-column-right">
+            {/* Goals Quick View */}
+            <motion.section
+              className="goals-sidebar"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
+            >
+              <h2 className="sidebar-title">My Goals</h2>
+              <div className="goals-quick-list">
+                {goalProgressList.map((goalItem) => (
+                  <motion.button
+                    key={goalItem.id}
+                    className={`goal-quick-card ${goalItem.id === activeGoal?.id ? "active" : ""}`}
+                    onClick={() => setActiveGoalId(goalItem.id)}
+                    whileHover={{ x: 4 }}
+                  >
+                    <div className="goal-quick-title">{goalItem.title}</div>
+                    <div className="goal-quick-progress">
+                      <div className="quick-bar">
+                        <div
+                          className="quick-fill"
+                          style={{ width: `${goalItem.progressPercent}%` }}
+                        />
+                      </div>
+                      <span className="quick-percent">{goalItem.progressPercent}%</span>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            </motion.section>
+
+            {/* Dog Circle Feed */}
+            <motion.section
+              className="feed-sidebar"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.35 }}
+            >
+              <div className="feed-header">
+                <h2 className="sidebar-title">Dog Circle 🐾</h2>
+                <span className="feed-score">{bonePoints + streak * 10} pts</span>
+              </div>
+              <div className="feed-posts">
+                {posts.slice(0, 5).map((post) => (
+                  <div key={post.id} className="feed-post">
+                    <strong className="post-author">{post.name}</strong>
+                    <p className="post-text">{post.text}</p>
+                  </div>
+                ))}
+              </div>
+            </motion.section>
+          </div>
+        </main>
+      </div>
     </motion.div>
   );
 }
