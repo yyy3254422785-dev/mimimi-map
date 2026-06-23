@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 
 import "./App.css";
 import { getSharedState, publishTodayTasks } from "./shibaApi";
+import heroImage from "./assets/shiba-hero.png";
 
 const API_BASE =
   "https://sturdy-computing-machine-4jv7gjxjjx9rc5xwg-3001.app.github.dev";
@@ -88,7 +89,18 @@ function getDateLabel(dateKey) {
   if (dateKey === yesterdayKey) return "Yesterday";
   if (dateKey === tomorrowKey) return "Tomorrow";
 
-  return formatDisplayDate(dateKey);
+  const date = getDateFromKey(dateKey);
+  return date.toLocaleDateString("en-SG", {
+    weekday: "short",
+  });
+}
+
+function formatDateValue(dateKey) {
+  const date = getDateFromKey(dateKey);
+  return date.toLocaleDateString("en-SG", {
+    day: "numeric",
+    month: "short",
+  });
 }
 
 function createDateRange(centerDateKey, range = 3) {
@@ -168,7 +180,7 @@ function App() {
   const appliedDeviceCompletionIdsRef = useRef(new Set());
   const [goalInput, setGoalInput] = useState("");
   const [goals, setGoals] = useState(() => {
-  const savedGoals = loadJSON(STORAGE_KEYS.goals, null);
+    const savedGoals = loadJSON(STORAGE_KEYS.goals, null);
 
     if (Array.isArray(savedGoals) && savedGoals.length > 0) {
       return savedGoals;
@@ -315,6 +327,11 @@ function App() {
 
   const syncError = taskSyncError || deviceSyncError;
 
+  const activeGoalProgress =
+    goalProgressList.find((g) => g.id === activeGoal?.id)?.progressPercent ?? 0;
+
+  const shibaMessage = posts?.[0]?.text ?? "Ready for a walk!";
+
   // --------------------------------------------------
   // Effects
   // --------------------------------------------------
@@ -356,49 +373,49 @@ function App() {
   }, [activeGoal?.id]);
 
   useEffect(() => {
-  const todayTasks = Array.isArray(tasksByDate[todayKey])
-    ? tasksByDate[todayKey]
-    : [];
+    const todayTasks = Array.isArray(tasksByDate[todayKey])
+      ? tasksByDate[todayKey]
+      : [];
 
-  const syncTasksToBackend = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/api/state`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          tasks: todayTasks.map((task) => ({
-            id: task.id,
-            text: task.text,
-            done: Boolean(task.done),
-            goalId: task.goalId ?? null,
-          })),
-        }),
-      });
+    const syncTasksToBackend = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/state`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            tasks: todayTasks.map((task) => ({
+              id: task.id,
+              text: task.text,
+              done: Boolean(task.done),
+              goalId: task.goalId ?? null,
+            })),
+          }),
+        });
 
-      if (!response.ok) {
-        const errorText = await response.text();
+        if (!response.ok) {
+          const errorText = await response.text();
 
-        console.error(
-          "Failed to sync tasks:",
-          response.status,
-          errorText,
-        );
+          console.error(
+            "Failed to sync tasks:",
+            response.status,
+            errorText,
+          );
 
-        return;
+          return;
+        }
+
+        const updatedState = await response.json();
+
+        console.log("Tasks synced to backend:", updatedState);
+      } catch (error) {
+        console.error("Cannot connect to backend:", error);
       }
+    };
 
-      const updatedState = await response.json();
-
-      console.log("Tasks synced to backend:", updatedState);
-    } catch (error) {
-      console.error("Cannot connect to backend:", error);
-    }
-  };
-
-  syncTasksToBackend();
-}, [tasksByDate, todayKey]);
+    syncTasksToBackend();
+  }, [tasksByDate, todayKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -468,64 +485,64 @@ function App() {
   }, []);
 
   useEffect(() => {
-  const remotelyCompletedTaskIds = new Set(
-    deviceTasks
-      .filter((task) => Boolean(task.done))
-      .map((task) => task.id),
-  );
+    const remotelyCompletedTaskIds = new Set(
+      deviceTasks
+        .filter((task) => Boolean(task.done))
+        .map((task) => task.id),
+    );
 
-  for (const processedTaskId of appliedDeviceCompletionIdsRef.current) {
-    if (!remotelyCompletedTaskIds.has(processedTaskId)) {
-      appliedDeviceCompletionIdsRef.current.delete(processedTaskId);
+    for (const processedTaskId of appliedDeviceCompletionIdsRef.current) {
+      if (!remotelyCompletedTaskIds.has(processedTaskId)) {
+        appliedDeviceCompletionIdsRef.current.delete(processedTaskId);
+      }
     }
-  }
 
-  todayTasks.forEach((task) => {
-    if (task.done && remotelyCompletedTaskIds.has(task.id)) {
-      appliedDeviceCompletionIdsRef.current.add(task.id);
+    todayTasks.forEach((task) => {
+      if (task.done && remotelyCompletedTaskIds.has(task.id)) {
+        appliedDeviceCompletionIdsRef.current.add(task.id);
+      }
+    });
+
+    const newlyCompletedTaskIds = todayTasks
+      .filter((task) => {
+        return (
+          !task.done &&
+          remotelyCompletedTaskIds.has(task.id) &&
+          !appliedDeviceCompletionIdsRef.current.has(task.id)
+        );
+      })
+      .map((task) => task.id);
+
+    if (newlyCompletedTaskIds.length === 0) {
+      return;
     }
-  });
 
-  const newlyCompletedTaskIds = todayTasks
-    .filter((task) => {
-      return (
-        !task.done &&
-        remotelyCompletedTaskIds.has(task.id) &&
-        !appliedDeviceCompletionIdsRef.current.has(task.id)
-      );
-    })
-    .map((task) => task.id);
+    newlyCompletedTaskIds.forEach((taskId) => {
+      appliedDeviceCompletionIdsRef.current.add(taskId);
+    });
 
-  if (newlyCompletedTaskIds.length === 0) {
-    return;
-  }
+    setTasksByDate((current) => {
+      const currentTodayTasks = Array.isArray(current[todayKey])
+        ? current[todayKey]
+        : [];
 
-  newlyCompletedTaskIds.forEach((taskId) => {
-    appliedDeviceCompletionIdsRef.current.add(taskId);
-  });
+      return {
+        ...current,
+        [todayKey]: currentTodayTasks.map((task) => {
+          return newlyCompletedTaskIds.includes(task.id)
+            ? {
+                ...task,
+                done: true,
+              }
+            : task;
+        }),
+      };
+    });
 
-  setTasksByDate((current) => {
-    const currentTodayTasks = Array.isArray(current[todayKey])
-      ? current[todayKey]
-      : [];
-
-    return {
-      ...current,
-      [todayKey]: currentTodayTasks.map((task) => {
-        return newlyCompletedTaskIds.includes(task.id)
-          ? {
-              ...task,
-              done: true,
-            }
-          : task;
-      }),
-    };
-  });
-
-  setBonePoints((points) => {
-    return points + newlyCompletedTaskIds.length * 5;
-  });
-}, [deviceState?.tasks, deviceTasks, todayKey, todayTasks]);
+    setBonePoints((points) => {
+      return points + newlyCompletedTaskIds.length * 5;
+    });
+  }, [deviceState?.tasks, deviceTasks, todayKey, todayTasks]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.goals, JSON.stringify(goals));
@@ -816,15 +833,16 @@ function App() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35 }}
     >
-      <AnimatePresence>
-        {showCarryOverPrompt && (
-          <motion.div
-            className="carryover-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
+      <div className="container">
+        <AnimatePresence>
+          {showCarryOverPrompt && (
+            <motion.div
+              className="carryover-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
             <motion.div
               className="carryover-modal"
               initial={{ opacity: 0, scale: 0.9, y: 24 }}
@@ -865,282 +883,326 @@ function App() {
         )}
       </AnimatePresence>
 
-      <motion.header
-        className="hero"
-        initial={{ opacity: 0, y: -20 }}
+      <motion.section
+        className="redesigned-hero"
+        initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45 }}
       >
-        <div>
-          <p className="team">team mimimi</p>
-          <h1>ShibaSteps 🐕</h1>
-          <p>
-            Turn big goals into date-based daily actions, then stay consistent
-            with check-ins, streaks, and Dog Circle accountability.
-          </p>
+        <div className="hero-scene glass-lg">
+          <div className="hero-scene-inner">
+            <div className="hero-left">
+              <div className="shiba-wrapper">
+                <img src={heroImage} alt="Shiba" className="hero-shiba-image" />
+
+                <div className="shiba-speech glass-sm">
+                  <span className="speech-text">{shibaMessage}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="hero-right">
+              <div className="hero-info glass-md">
+                <div className="hero-info-top">
+                  <h3 className="hero-name">{activeGoal?.title ?? goal}</h3>
+                  <div className="hero-level">Lv. {Math.max(1, Math.floor(bonePoints / 20) || 1)}</div>
+                </div>
+
+                <div className="hero-stats-row">
+                  <div className="stat-item">
+                    <div className="stat-value">{bonePoints}</div>
+                    <div className="stat-label">Bone Points</div>
+                  </div>
+
+                  <div className="stat-item">
+                    <div className="stat-value">{streak}</div>
+                    <div className="stat-label">Day Streak</div>
+                  </div>
+                </div>
+
+                <div className="hero-progress">
+                  <div className="progress-label">Progress</div>
+                  <div className="progress-bar">
+                    <div className="progress-fill" style={{ width: `${activeGoalProgress}%` }} />
+                  </div>
+                  <div className="progress-percent">{activeGoalProgress}%</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.section>
+
+      <main className="dashboard-layout">
+        <div className="dashboard-column-left">
+          {/* Date Planner (primary) */}
+          <section className="card wide glass-lg">
+            <h2>Date Planner</h2>
+            <p className="small-text">
+              Select any date to view, add, complete, or postpone tasks.
+            </p>
+
+            <div className="date-jump">
+              <input
+                type="date"
+                value={customDate}
+                onChange={(event) => setCustomDate(event.target.value)}
+              />
+              <button onClick={jumpToCustomDate}>Go to Date</button>
+            </div>
+
+            <div className="calendar-row">
+              {visibleDates.map((dateKey) => {
+                const dateTasks = Array.isArray(tasksByDate[dateKey])
+                  ? tasksByDate[dateKey]
+                  : [];
+                const taskCount = dateTasks.length;
+                const doneCount = dateTasks.filter((task) => task.done).length;
+                const isCheckedIn = checkedInDates.includes(dateKey);
+
+                return (
+                  <button
+                    key={dateKey}
+                    className={
+                      dateKey === selectedDate ? "date-card active" : "date-card"
+                    }
+                    onClick={() => {
+                      setSelectedDate(dateKey);
+                      setCustomDate(dateKey);
+                    }}
+                  >
+                    <span>{getDateLabel(dateKey)}</span>
+                    <strong>{formatDateValue(dateKey)}</strong>
+                    <small>
+                      {doneCount}/{taskCount} done {isCheckedIn ? "🐾" : ""}
+                    </small>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* Tasks / Daily Mission (primary) */}
+          <section className="card wide glass-lg">
+            <div className="section-title-row">
+              <div>
+                <h2>{getDateLabel(selectedDate)}'s Tasks</h2>
+                <p className="small-text">
+                  Selected date: <strong>{selectedDate}</strong>
+                </p>
+              </div>
+
+              <div className="progress-pill">
+                {completedCount}/{totalCount} completed
+              </div>
+            </div>
+
+            <div className="input-row">
+              <input
+                value={taskInput}
+                onChange={(event) => setTaskInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    addTask();
+                  }
+                }}
+                placeholder="Add a plan for this date"
+              />
+              <button onClick={addTask}>Add Task</button>
+            </div>
+
+            {selectedTasks.length === 0 ? (
+              <div className="empty-state">
+                <p>No tasks for this date yet.</p>
+                <p>Add one task above to start planning.</p>
+              </div>
+            ) : (
+              <div className="tasks">
+                {selectedTasks.map((task) => (
+                  <div key={task.id} className={task.done ? "task done" : "task"}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(task.done)}
+                        onChange={() => toggleTask(task.id)}
+                      />
+                      <span>{task.text}</span>
+                    </label>
+
+                    <div className="task-actions">
+                      {!task.done && (
+                        <button
+                          className="secondary-button"
+                          onClick={() => moveTaskToTomorrow(task.id)}
+                        >
+                          Move to Tomorrow
+                        </button>
+                      )}
+
+                      <button
+                        className="danger-button"
+                        onClick={() => deleteTask(task.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              className="checkin"
+              onClick={completeDailyCheckIn}
+              disabled={selectedDate === todayKey && hasCheckedInToday}
+            >
+              {selectedDate === todayKey && hasCheckedInToday
+                ? "Checked in Today"
+                : "Complete Daily Check-in"}
+            </button>
+          </section>
         </div>
 
-        <motion.div
-          className="dog-card"
-          whileHover={{ y: -6, rotate: 1.5 }}
-          whileTap={{ scale: 0.97 }}
-        >
-          <div className="dog-icon">🐶</div>
-          <h2>Level 3 Shiba</h2>
-          <p>{bonePoints} 🦴 Bone Points</p>
-        </motion.div>
-      </motion.header>
-
-      <main className="layout">
-        <section className="card">
-          <h2>Create a Goal</h2>
-          <p className="small-text">
-            Enter a long-term goal. ShibaSteps will add suggested tasks to your
-            selected date.
-          </p>
-
-          <div className="input-row">
-            <input
-              value={goalInput}
-              onChange={(event) => setGoalInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  createGoal();
-                }
-              }}
-              placeholder="e.g. Prepare for finals"
-            />
-            <button onClick={createGoal}>Create</button>
-          </div>
-        </section>
-
-        <section className="card wide">
-          <h2>Long-term Goals</h2>
-          <p className="small-text">
-            All long-term goals are listed here. Click a goal to make it the
-            active goal for new tasks.
-          </p>
-
-          <div className="goal-list">
-            {goalProgressList.map((goalItem) => (
-              <button
-                key={goalItem.id}
-                className={
-                  goalItem.id === activeGoal?.id
-                    ? "goal-card active"
-                    : "goal-card"
-                }
-                onClick={() => setActiveGoalId(goalItem.id)}
-              >
-                <div className="goal-card-top">
-                  <strong>{goalItem.title}</strong>
-                  <span>
-                    {goalItem.completed}/{goalItem.total} small tasks completed
-                  </span>
-                </div>
-
-                <div className="goal-progress-bar">
-                  <div
-                    style={{
-                      width: `${goalItem.progressPercent}%`,
-                    }}
-                  />
-                </div>
-
-                <small>{goalItem.progressPercent}% complete</small>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="card">
-          <h2>Current Goal</h2>
-          <h3>{goal}</h3>
-
-          <div className="stats">
-            <div>
-              <strong>{streak}</strong>
-              <span>day streak</span>
-            </div>
-            <div>
-              <strong>{bonePoints}</strong>
-              <span>bone points</span>
-            </div>
-          </div>
-        </section>
-
-        <section className="card">
-          <h2>Desktop Assistant</h2>
-
-          {syncError && <p className="error-text">{syncError}</p>}
-
-          {!deviceState ? (
-            <p>Connecting...</p>
-          ) : (
-            <>
-              <p>
-                Current task:{" "}
-                <strong>{currentDeviceTask?.text ?? "No task selected"}</strong>
-              </p>
-
-              <p>
-                Pomodoro:{" "}
-                <strong>{formatTimer(deviceTimer.remainingSeconds)}</strong>
-              </p>
-
-              <p>
-                Status: <strong>{deviceTimer.status ?? "unknown"}</strong>
-              </p>
-            </>
-          )}
-        </section>
-
-        <section className="card wide">
-          <h2>Date Planner</h2>
-          <p className="small-text">
-            Select any date to view, add, complete, or postpone tasks.
-          </p>
-
-          <div className="date-jump">
-            <input
-              type="date"
-              value={customDate}
-              onChange={(event) => setCustomDate(event.target.value)}
-            />
-            <button onClick={jumpToCustomDate}>Go to Date</button>
-          </div>
-
-          <div className="calendar-row">
-            {visibleDates.map((dateKey) => {
-              const dateTasks = Array.isArray(tasksByDate[dateKey])
-                ? tasksByDate[dateKey]
-                : [];
-              const taskCount = dateTasks.length;
-              const doneCount = dateTasks.filter((task) => task.done).length;
-              const isCheckedIn = checkedInDates.includes(dateKey);
-
-              return (
-                <button
-                  key={dateKey}
-                  className={
-                    dateKey === selectedDate ? "date-card active" : "date-card"
+        <aside className="dashboard-column-right">
+          {/* Compact Create Goal (secondary small) */}
+          <section className="create-section glass-sm">
+            <div className="section-label">Create Goal</div>
+            <div className="input-row compact">
+              <input
+                value={goalInput}
+                onChange={(event) => setGoalInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    createGoal();
                   }
-                  onClick={() => {
-                    setSelectedDate(dateKey);
-                    setCustomDate(dateKey);
-                  }}
+                }}
+                placeholder="New goal"
+              />
+              <button onClick={createGoal}>Create</button>
+            </div>
+          </section>
+
+          {/* Goal Garden (medium) */}
+          <section className="goals-sidebar glass-md">
+            <h2>Long-term Goals</h2>
+            <p className="small-text">
+              Click a goal to make it the active goal for new tasks.
+            </p>
+
+            <div className="goal-list">
+              {goalProgressList.map((goalItem) => (
+                <button
+                  key={goalItem.id}
+                  className={
+                    goalItem.id === activeGoal?.id
+                      ? "goal-card active"
+                      : "goal-card"
+                  }
+                  onClick={() => setActiveGoalId(goalItem.id)}
                 >
-                  <span>{getDateLabel(dateKey)}</span>
-                  <strong>{formatDisplayDate(dateKey)}</strong>
-                  <small>
-                    {doneCount}/{taskCount} done {isCheckedIn ? "🐾" : ""}
-                  </small>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="card wide">
-          <div className="section-title-row">
-            <div>
-              <h2>{getDateLabel(selectedDate)}'s Tasks</h2>
-              <p className="small-text">
-                Selected date: <strong>{selectedDate}</strong>
-              </p>
-            </div>
-
-            <div className="progress-pill">
-              {completedCount}/{totalCount} completed
-            </div>
-          </div>
-
-          <div className="input-row">
-            <input
-              value={taskInput}
-              onChange={(event) => setTaskInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  addTask();
-                }
-              }}
-              placeholder="Add a plan for this date"
-            />
-            <button onClick={addTask}>Add Task</button>
-          </div>
-
-          {selectedTasks.length === 0 ? (
-            <div className="empty-state">
-              <p>No tasks for this date yet.</p>
-              <p>Add one task above to start planning.</p>
-            </div>
-          ) : (
-            <div className="tasks">
-              {selectedTasks.map((task) => (
-                <div key={task.id} className={task.done ? "task done" : "task"}>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={Boolean(task.done)}
-                      onChange={() => toggleTask(task.id)}
-                    />
-                    <span>{task.text}</span>
-                  </label>
-
-                  <div className="task-actions">
-                    {!task.done && (
-                      <button
-                        className="secondary-button"
-                        onClick={() => moveTaskToTomorrow(task.id)}
-                      >
-                        Move to Tomorrow
-                      </button>
-                    )}
-
-                    <button
-                      className="danger-button"
-                      onClick={() => deleteTask(task.id)}
-                    >
-                      Delete
-                    </button>
+                  <div className="goal-card-top">
+                    <strong>{goalItem.title}</strong>
+                    <span>
+                      {goalItem.completed}/{goalItem.total} small tasks completed
+                    </span>
                   </div>
+
+                  <div className="goal-progress-bar">
+                    <div
+                      style={{
+                        width: `${goalItem.progressPercent}%`,
+                      }}
+                    />
+                  </div>
+
+                  <small>{goalItem.progressPercent}% complete</small>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* Current Goal / Stats (medium) */}
+          <section className="focus-card glass-md">
+            <div className="focus-header">
+              <div className="focus-icon">🌿</div>
+              <h2>Current Goal</h2>
+            </div>
+
+            <div className="active-goal-title">{goal}</div>
+
+            <div className="goal-summary">
+              <div className="progress-indicator">
+                <div className="progress-bar">
+                  <div className="progress-fill" style={{ width: `${activeGoalProgress}%` }} />
+                </div>
+
+                <div className="progress-text">{activeGoalProgress}%</div>
+              </div>
+
+              <div className="stats">
+                <div>
+                  <strong>{streak}</strong>
+                  <span>day streak</span>
+                </div>
+                <div>
+                  <strong>{bonePoints}</strong>
+                  <span>bone points</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Desktop Assistant (small) */}
+          <section className="feed-sidebar glass-sm">
+            <h2>Desktop Assistant</h2>
+
+            {syncError && <p className="error-text">{syncError}</p>}
+
+            {!deviceState ? (
+              <p>Connecting...</p>
+            ) : (
+              <>
+                <p>
+                  Current task: {" "}
+                  <strong>{currentDeviceTask?.text ?? "No task selected"}</strong>
+                </p>
+
+                <p>
+                  Pomodoro: {" "}
+                  <strong>{formatTimer(deviceTimer.remainingSeconds)}</strong>
+                </p>
+
+                <p>
+                  Status: <strong>{deviceTimer.status ?? "unknown"}</strong>
+                </p>
+              </>
+            )}
+          </section>
+
+          {/* Dog Circle (medium) */}
+          <section className="feed-sidebar glass-md">
+            <h2>Dog Circle 🐾</h2>
+            <p className="small-text">
+              This is still a simulated Dog Circle feed. It demonstrates social
+              accountability before adding a real backend.
+            </p>
+
+            <div className="circle-score">
+              <strong>Circle Points: {bonePoints + streak * 10}</strong>
+            </div>
+
+            <div className="feed">
+              {posts.map((post) => (
+                <div className="post" key={post.id}>
+                  <strong>{post.name}</strong>
+                  <p>{post.text}</p>
                 </div>
               ))}
             </div>
-          )}
-
-          <button
-            className="checkin"
-            onClick={completeDailyCheckIn}
-            disabled={selectedDate === todayKey && hasCheckedInToday}
-          >
-            {selectedDate === todayKey && hasCheckedInToday
-              ? "Checked in Today"
-              : "Complete Daily Check-in"}
-          </button>
-        </section>
-
-        <section className="card wide">
-          <h2>Dog Circle 🐾</h2>
-          <p className="small-text">
-            This is still a simulated Dog Circle feed. It demonstrates social
-            accountability before adding a real backend.
-          </p>
-
-          <div className="circle-score">
-            <strong>Circle Points: {bonePoints + streak * 10}</strong>
-          </div>
-
-          <div className="feed">
-            {posts.map((post) => (
-              <div className="post" key={post.id}>
-                <strong>{post.name}</strong>
-                <p>{post.text}</p>
-              </div>
-            ))}
-          </div>
-        </section>
+          </section>
+        </aside>
       </main>
+      </div>
     </motion.div>
   );
 }
