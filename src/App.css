@@ -2040,3 +2040,19 @@ button:disabled {
     font-size: 10px;
   }
 }
+
+.locked-notice {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(107, 138, 86, 0.3);
+  border-radius: 12px;
+  background: rgba(214, 232, 215, 0.55);
+  color: #3d513b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.task input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}

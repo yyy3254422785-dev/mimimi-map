@@ -5,8 +5,7 @@ import "./App.css";
 import { getSharedState, publishTodayTasks } from "./shibaApi";
 import heroImage from "./assets/shiba-hero.png";
 
-const API_BASE =
-  "https://sturdy-computing-machine-4jv7gjxjjx9rc5xwg-3001.app.github.dev";
+
 const STORAGE_KEYS = {
   goal: "shiba-goal",
   goals: "shiba-goals",
@@ -309,6 +308,8 @@ function App() {
   const totalCount = selectedTasks.length;
   const hasCheckedInToday = checkedInDates.includes(todayKey);
 
+  const isSelectedDateLocked = checkedInDates.includes(selectedDate);
+
   const yesterdayKey = addDays(todayKey, -1);
   const yesterdayTasks = Array.isArray(tasksByDate[yesterdayKey])
     ? tasksByDate[yesterdayKey]
@@ -333,89 +334,45 @@ function App() {
   const shibaMessage = posts?.[0]?.text ?? "Ready for a walk!";
 
   // --------------------------------------------------
-  // Effects
-  // --------------------------------------------------
+// Effects
+// --------------------------------------------------
 
-  useEffect(() => {
-    const fallbackGoalId = activeGoal?.id;
+useEffect(() => {
+  const fallbackGoalId = activeGoal?.id;
 
-    if (!fallbackGoalId) {
-      return;
-    }
+  if (!fallbackGoalId) {
+    return;
+  }
 
-    setTasksByDate((current) => {
-      let changed = false;
+  setTasksByDate((current) => {
+    let changed = false;
 
-      const updatedTasksByDate = Object.fromEntries(
-        Object.entries(current).map(([dateKey, tasks]) => {
-          const safeTasks = Array.isArray(tasks) ? tasks : [];
+    const updatedTasksByDate = Object.fromEntries(
+      Object.entries(current).map(([dateKey, tasks]) => {
+        const safeTasks = Array.isArray(tasks) ? tasks : [];
 
-          return [
-            dateKey,
-            safeTasks.map((task) => {
-              if (task.goalId) {
-                return task;
-              }
+        return [
+          dateKey,
+          safeTasks.map((task) => {
+            if (task.goalId) {
+              return task;
+            }
 
-              changed = true;
+            changed = true;
 
-              return {
-                ...task,
-                goalId: fallbackGoalId,
-              };
-            }),
-          ];
-        }),
-      );
-
-      return changed ? updatedTasksByDate : current;
-    });
-  }, [activeGoal?.id]);
-
-  useEffect(() => {
-    const todayTasks = Array.isArray(tasksByDate[todayKey])
-      ? tasksByDate[todayKey]
-      : [];
-
-    const syncTasksToBackend = async () => {
-      try {
-        const response = await fetch(`${API_BASE}/api/state`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            tasks: todayTasks.map((task) => ({
-              id: task.id,
-              text: task.text,
-              done: Boolean(task.done),
-              goalId: task.goalId ?? null,
-            })),
+            return {
+              ...task,
+              goalId: fallbackGoalId,
+            };
           }),
-        });
+        ];
+      }),
+    );
 
-        if (!response.ok) {
-          const errorText = await response.text();
+    return changed ? updatedTasksByDate : current;
+  });
+}, [activeGoal?.id]);
 
-          console.error(
-            "Failed to sync tasks:",
-            response.status,
-            errorText,
-          );
-
-          return;
-        }
-
-        const updatedState = await response.json();
-
-        console.log("Tasks synced to backend:", updatedState);
-      } catch (error) {
-        console.error("Cannot connect to backend:", error);
-      }
-    };
-
-    syncTasksToBackend();
-  }, [tasksByDate, todayKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -577,91 +534,124 @@ function App() {
   }, [posts]);
 
   useEffect(() => {
-    const dismissedDate = localStorage.getItem(
-      STORAGE_KEYS.carryOverDismissedDate,
-    );
+  const dismissedDate = localStorage.getItem(
+    STORAGE_KEYS.carryOverDismissedDate,
+  );
 
-    setShowCarryOverPrompt(
-      yesterdayUnfinishedCount > 0 && dismissedDate !== todayKey,
-    );
-  }, [yesterdayUnfinishedCount, todayKey]);
+  setShowCarryOverPrompt(
+    yesterdayUnfinishedCount > 0 &&
+      !hasCheckedInToday &&
+      dismissedDate !== todayKey,
+  );
+}, [yesterdayUnfinishedCount, todayKey, hasCheckedInToday]);
 
   // --------------------------------------------------
   // Event handlers
   // --------------------------------------------------
 
-  function createGoal() {
-    const trimmedGoal = goalInput.trim();
-
-    if (trimmedGoal === "") {
-      return;
-    }
-
-    const newGoal = {
-      id: createId(),
-      title: trimmedGoal,
-    };
-
-    const suggestedTasks = [
-      {
-        id: createId(),
-        goalId: newGoal.id,
-        text: `Break "${trimmedGoal}" into smaller steps`,
-        done: false,
-      },
-      {
-        id: createId(),
-        goalId: newGoal.id,
-        text: `Complete one small action for "${trimmedGoal}"`,
-        done: false,
-      },
-      {
-        id: createId(),
-        goalId: newGoal.id,
-        text: "Check in before the day ends",
-        done: false,
-      },
-    ];
-
-    setGoals((currentGoals) => [...currentGoals, newGoal]);
-    setActiveGoalId(newGoal.id);
-    setTasksByDate((current) => ({
-      ...current,
-      [selectedDate]: [
-        ...(Array.isArray(current[selectedDate]) ? current[selectedDate] : []),
-        ...suggestedTasks,
-      ],
-    }));
-    setGoalInput("");
+  function stopIfSelectedDateLocked() {
+  if (!isSelectedDateLocked) {
+    return false;
   }
+
+  window.alert(
+    "This day's tasks are locked because check-in is already complete.",
+  );
+
+  return true;
+}
+
+  function createGoal() {
+  if (stopIfSelectedDateLocked()) {
+    return;
+  }
+
+  const trimmedGoal = goalInput.trim();
+
+  if (trimmedGoal === "") {
+    return;
+  }
+
+  const newGoal = {
+    id: createId(),
+    title: trimmedGoal,
+  };
+
+  const suggestedTasks = [
+    {
+      id: createId(),
+      goalId: newGoal.id,
+      text: `Break "${trimmedGoal}" into smaller steps`,
+      done: false,
+    },
+    {
+      id: createId(),
+      goalId: newGoal.id,
+      text: `Complete one small action for "${trimmedGoal}"`,
+      done: false,
+    },
+    {
+      id: createId(),
+      goalId: newGoal.id,
+      text: "Check in before the day ends",
+      done: false,
+    },
+  ];
+
+  setGoals((currentGoals) => [...currentGoals, newGoal]);
+
+  setActiveGoalId(newGoal.id);
+
+  setTasksByDate((current) => ({
+    ...current,
+    [selectedDate]: [
+      ...(Array.isArray(current[selectedDate])
+        ? current[selectedDate]
+        : []),
+      ...suggestedTasks,
+    ],
+  }));
+
+  setGoalInput("");
+}
 
   function addTask() {
-    const trimmedTask = taskInput.trim();
-
-    if (trimmedTask === "" || !activeGoal?.id) {
-      return;
-    }
-
-    const newTask = {
-      id: createId(),
-      goalId: activeGoal.id,
-      text: trimmedTask,
-      done: false,
-    };
-
-    setTasksByDate((current) => ({
-      ...current,
-      [selectedDate]: [
-        ...(Array.isArray(current[selectedDate]) ? current[selectedDate] : []),
-        newTask,
-      ],
-    }));
-
-    setTaskInput("");
+  if (stopIfSelectedDateLocked()) {
+    return;
   }
 
+  const trimmedTask = taskInput.trim();
+
+  if (trimmedTask === "" || !activeGoal?.id) {
+    return;
+  }
+
+  const newTask = {
+    id: createId(),
+    goalId: activeGoal.id,
+    text: trimmedTask,
+    done: false,
+  };
+
+  setTasksByDate((current) => ({
+    ...current,
+    [selectedDate]: [
+      ...(Array.isArray(current[selectedDate])
+        ? current[selectedDate]
+        : []),
+      newTask,
+    ],
+  }));
+
+  setTaskInput("");
+}
+
   function toggleTask(taskId) {
-    const taskToToggle = selectedTasks.find((task) => task.id === taskId);
+  if (stopIfSelectedDateLocked()) {
+    return;
+  }
+
+  const taskToToggle = selectedTasks.find((task) => task.id === taskId);
 
     if (!taskToToggle) {
       return;
@@ -691,7 +681,11 @@ function App() {
   }
 
   function deleteTask(taskId) {
-    setTasksByDate((current) => {
+  if (stopIfSelectedDateLocked()) {
+    return;
+  }
+
+  setTasksByDate((current) => {
       const currentTasks = Array.isArray(current[selectedDate])
         ? current[selectedDate]
         : [];
@@ -704,7 +698,11 @@ function App() {
   }
 
   function moveTaskToTomorrow(taskId) {
-    const tomorrowKey = addDays(selectedDate, 1);
+  if (stopIfSelectedDateLocked()) {
+    return;
+  }
+
+  const tomorrowKey = addDays(selectedDate, 1);
     const taskToMove = selectedTasks.find((task) => task.id === taskId);
 
     if (!taskToMove) {
@@ -775,7 +773,17 @@ function App() {
   }
 
   function moveYesterdayTasksToToday() {
-    setTasksByDate((current) => {
+  if (hasCheckedInToday) {
+    setShowCarryOverPrompt(false);
+
+    window.alert(
+      "Today's tasks are locked because check-in is already complete.",
+    );
+
+    return;
+  }
+
+  setTasksByDate((current) => {
       const currentYesterdayTasks = Array.isArray(current[yesterdayKey])
         ? current[yesterdayKey]
         : [];
@@ -997,18 +1005,35 @@ function App() {
               </div>
             </div>
 
+            {isSelectedDateLocked && (
+  <div className="locked-notice">
+    🔒 Check-in completed. Tasks for this date are now locked.
+  </div>
+)}
+
             <div className="input-row">
               <input
-                value={taskInput}
-                onChange={(event) => setTaskInput(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    addTask();
-                  }
-                }}
-                placeholder="Add a plan for this date"
-              />
-              <button onClick={addTask}>Add Task</button>
+  value={taskInput}
+  onChange={(event) => setTaskInput(event.target.value)}
+  onKeyDown={(event) => {
+    if (event.key === "Enter") {
+      addTask();
+    }
+  }}
+  placeholder={
+    isSelectedDateLocked
+      ? "Tasks are locked after check-in"
+      : "Add a plan for this date"
+  }
+  disabled={isSelectedDateLocked}
+/>
+
+<button
+  onClick={addTask}
+  disabled={isSelectedDateLocked}
+>
+  Add Task
+</button>
             </div>
 
             {selectedTasks.length === 0 ? (
@@ -1022,44 +1047,49 @@ function App() {
                   <div key={task.id} className={task.done ? "task done" : "task"}>
                     <label>
                       <input
-                        type="checkbox"
-                        checked={Boolean(task.done)}
-                        onChange={() => toggleTask(task.id)}
-                      />
+  type="checkbox"
+  checked={Boolean(task.done)}
+  onChange={() => toggleTask(task.id)}
+  disabled={isSelectedDateLocked}
+/>
                       <span>{task.text}</span>
                     </label>
 
-                    <div className="task-actions">
-                      {!task.done && (
-                        <button
-                          className="secondary-button"
-                          onClick={() => moveTaskToTomorrow(task.id)}
-                        >
-                          Move to Tomorrow
-                        </button>
-                      )}
+                    {!isSelectedDateLocked && (
+  <div className="task-actions">
+    {!task.done && (
+      <button
+        className="secondary-button"
+        onClick={() => moveTaskToTomorrow(task.id)}
+      >
+        Move to Tomorrow
+      </button>
+    )}
 
-                      <button
-                        className="danger-button"
-                        onClick={() => deleteTask(task.id)}
-                      >
-                        Delete
-                      </button>
-                    </div>
+    <button
+      className="danger-button"
+      onClick={() => deleteTask(task.id)}
+    >
+      Delete
+    </button>
+  </div>
+)}
                   </div>
                 ))}
               </div>
             )}
 
             <button
-              className="checkin"
-              onClick={completeDailyCheckIn}
-              disabled={selectedDate === todayKey && hasCheckedInToday}
-            >
-              {selectedDate === todayKey && hasCheckedInToday
-                ? "Checked in Today"
-                : "Complete Daily Check-in"}
-            </button>
+  className="checkin"
+  onClick={completeDailyCheckIn}
+  disabled={selectedDate !== todayKey || isSelectedDateLocked}
+>
+  {isSelectedDateLocked
+    ? "Checked In — Tasks Locked"
+    : selectedDate !== todayKey
+      ? "Check-in Available Today Only"
+      : "Complete Daily Check-in"}
+</button>
           </section>
         </div>
 
@@ -1069,16 +1099,27 @@ function App() {
             <div className="section-label">Create Goal</div>
             <div className="input-row compact">
               <input
-                value={goalInput}
-                onChange={(event) => setGoalInput(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    createGoal();
-                  }
-                }}
-                placeholder="New goal"
-              />
-              <button onClick={createGoal}>Create</button>
+  value={goalInput}
+  onChange={(event) => setGoalInput(event.target.value)}
+  onKeyDown={(event) => {
+    if (event.key === "Enter") {
+      createGoal();
+    }
+  }}
+  placeholder={
+    isSelectedDateLocked
+      ? "Select an unlocked date first"
+      : "New goal"
+  }
+  disabled={isSelectedDateLocked}
+/>
+
+<button
+  onClick={createGoal}
+  disabled={isSelectedDateLocked}
+>
+  Create
+</button>
             </div>
           </section>
 
