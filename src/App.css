@@ -1306,41 +1306,53 @@ button:disabled {
 
 .task {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center;
+  gap: 16px;
   background: rgba(255, 255, 255, 0.65);
   border: 1px solid rgba(199, 115, 55, 0.15);
   border-radius: 14px;
-  padding: 14px;
+  padding: 14px 20px;
   transition: all 180ms ease;
 }
 
-.task:hover {
-  background: rgba(255, 255, 255, 0.75);
-  border-color: rgba(199, 115, 55, 0.3);
-}
-
-.task.done {
-  background: rgba(219, 204, 183, 0.18);
-  border-color: rgba(139, 122, 102, 0.2);
-}
-
 .task label {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  cursor: pointer;
   flex: 1;
+  min-width: 0;
+
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+
+  cursor: pointer;
 }
 
 .task input[type="checkbox"] {
+  flex: none;
   width: 20px;
   height: 20px;
   min-width: 20px;
-  margin-top: 2px;
+
+  margin: 0;
+  padding: 0;
+
+  justify-self: start;
   cursor: pointer;
   accent-color: #ff9f57;
+}
+
+.task span {
+  min-width: 0;
+  text-align: left;
+}
+
+.task-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .task span {
