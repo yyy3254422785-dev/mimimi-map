@@ -1,5 +1,5 @@
 const API_BASE =
-  "https://sturdy-computing-machine-4jv7gjxjjx9rc5xwg-3001.app.github.dev";
+  "https://friendly-waffle-4jv7gjxjq759h7ggg-3001.app.github.dev";
 
 async function request(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
