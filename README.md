@@ -1,688 +1,193 @@
 # ShibaSteps
 
-**Team name:** mimimi  
-**Project type:** Orbital MVP / Goal-tracking web application  
-**Tech stack:** React + Vite
-
----
-## 1. Project Overview
-
-**ShibaSteps** is a Shiba-themed goal-tracking web application designed to help users turn long-term goals into manageable daily actions.
-
-Many people set goals such as improving fitness, studying consistently, building a habit, or finishing a project. However, these goals often fail because they are too vague, too large, or not connected to everyday action. ShibaSteps focuses on this gap: helping users break down goals into daily plans, complete small tasks consistently, and stay motivated through a cute, low-pressure interface.
-
-The MVP currently focuses on the core user experience of:
-
-- Creating or viewing goals
-- Breaking goals into daily tasks
-- Checking off daily progress
-- Maintaining streaks
-- Earning cute rewards such as bone points
-- Simulating a small community feature called **Dog Circle**
-
-The product uses a playful Shiba visual style to make goal-tracking feel less stressful and more encouraging.
-
----
-## 2. Problem Statement
-
-A common reason people fail to maintain goals is not lack of ambition, but lack of daily structure.
-
-For example, a user may say:
-
-> “I want to become fitter.”  
-> “I want to study more consistently.”  
-> “I want to finish my project earlier.”
-
-These goals are meaningful, but they are too broad. Without daily reminders, smaller action steps, and visible progress, users may easily delay or give up.
-
-ShibaSteps aims to solve this specific problem:
-
-> How might we help users translate long-term goals into daily actions and maintain motivation through simple tracking, rewards, and social encouragement?
+A smart productivity companion that combines a React web application with an ESP32-powered physical device to make task management more engaging and rewarding.
 
 ---
 
-## 3. Target Users
+# Overview
 
-ShibaSteps is mainly designed for students and young adults who want to build better habits or manage personal goals.
+ShibaSteps is a gamified task management system designed to improve users' productivity through both digital and physical interactions.
 
-Potential users include:
+Unlike traditional to-do list applications, ShibaSteps integrates a React-based web application with an ESP32 hardware device. Tasks created on the web are synchronized in real time to the ESP32, allowing users to manage their daily work using physical controls while receiving visual and tactile feedback through an OLED display, a stepper motor, and a buzzer.
 
-- University students managing academic tasks, projects, and self-study plans
-- Students preparing for exams who need consistent revision routines
-- People trying to build health, fitness, or lifestyle habits
-- Users who like cute, friendly, low-pressure productivity tools
-- Users who benefit from community encouragement and visible progress tracking
+The project aims to bridge software and hardware, creating a more interactive and enjoyable productivity experience.
 
 ---
 
-## 4. Core Idea
+# Features
 
-The core idea of ShibaSteps is simple:
+## Daily Task Management
 
-1. Users set a long-term goal.
-2. The goal is broken down into smaller daily tasks.
-3. Users check off completed tasks each day.
-4. Completed tasks contribute to streaks and bone points.
-5. Users can share progress in a Dog Circle community.
-6. Community interaction provides encouragement and accountability.
-
-Instead of making productivity feel strict or stressful, ShibaSteps uses a cute Shiba-themed design to make progress feel friendly and rewarding.
-
----
-
-## 5. Main Features
-
-### 5.1 Long-Term Goal Tracking
-
-Users can create or view long-term goals. These goals represent larger objectives that cannot be completed in one day.
-
-Examples:
-
-- Finish an Orbital milestone
-- Study CS2040C regularly
-- Exercise three times a week
-- Improve English writing
-- Build a healthier sleep schedule
-
-The purpose of long-term goals is to give users direction.
-
----
-
-### 5.2 Daily Plan
-
-Each long-term goal can be broken down into smaller daily tasks.
-
-Instead of only seeing a large goal, users can focus on what they need to do today.
-
-Example:
-
-Long-term goal:
-
-> Improve fitness
-
-Daily tasks:
-
-- Stretch for 10 minutes
-- Drink enough water
-- Complete one short workout
-- Record today’s progress
-
-This feature helps users move from intention to action.
-
----
-
-### 5.3 Any-Date Planning
-
-Users may want to add tasks not only for today, but also for future dates.
-
-For example:
-
-- Add a reminder for next Monday
-- Plan a study task for the weekend
-- Add a project meeting note for a specific date
-- Prepare a checklist before a deadline
-
-This allows the app to support flexible planning rather than only same-day task tracking.
-
----
-
-### 5.4 Task Completion Checklist
-
-Users can check off completed daily tasks.
-
-This gives immediate feedback and helps users clearly see what has been done.
-
-The checklist design is intentionally simple because the MVP prioritizes clarity over complex project management features.
-
----
-
-### 5.5 Delay / Reschedule Option
-
-If a task is not completed, the user can choose whether to delay it.
-
-This is important because real life is not perfectly predictable. A useful goal-tracking app should not punish the user harshly for missing one task.
-
-Instead, the app should help the user recover and continue.
-
-Potential logic:
-
-- If the user completes the task, it is marked as done.
-- If the user does not complete it, they may move it to another date.
-- The app encourages continuation instead of guilt.
-
----
-
-### 5.6 Streak Calendar
-
-The streak calendar shows whether the user has checked in consistently.
-
-In the ShibaSteps concept, streaks are represented with cute paw-print check-ins.
-
-The purpose of the streak system is to make progress visible.
-
-It helps users answer:
-
-- Did I make progress today?
-- How consistent have I been this week?
-- Am I maintaining my habit?
-
----
-
-### 5.7 Bone Points
-
-When users complete tasks, they can earn **bone points**.
-
-Bone points act as a simple reward system.
-
-They are not meant to be a complicated game economy. Instead, they provide a small motivational reward for consistent action.
-
-Possible uses of bone points in future versions:
-
-- Unlocking Shiba decorations
-- Customising a Dog Circle
-- Unlocking badges
-- Showing progress levels
-
----
-
-### 5.8 Dog Circle Community
-
-Dog Circle is a small community feature where users can share daily check-ins and encourage each other.
-
-The intended design is that around 20 users may form a small circle.
-
-Possible community actions include:
-
-- Posting daily progress
-- Giving encouragement
-- Liking or reacting to check-ins
-- Commenting on friends’ updates
-- Contributing points to decorate the Dog Circle
-
-This feature addresses the social side of habit-building. Many users are more likely to stay consistent when they feel seen and supported.
-
-For the current MVP, Dog Circle may be simulated with mock data or static UI to demonstrate the intended interaction flow.
-
----
-
-## 6. Proof of Concept
-
-### 6.1 Purpose of the Proof of Concept
-
-The proof of concept aims to show that the core ShibaSteps experience can be represented as a working web interface.
-
-At this stage, the priority is not to build every final feature, but to demonstrate the main user flow:
-
-1. User enters the app
-2. User views goals and daily tasks
-3. User interacts with checklist-style task completion
-4. User sees progress indicators such as streaks or points
-5. User understands the community concept through Dog Circle
-
-This confirms that the idea can be translated into a usable digital product.
-
----
-
-### 6.2 Current MVP Scope
-
-The current MVP focuses on frontend implementation using React and Vite.
-
-The current version may include:
-
-- A landing or home page
-- Goal cards
-- Daily task checklist
-- Streak calendar mockup
-- Bone points display
-- Dog Circle community mockup
-- Shiba-themed visual design
-- Basic state changes for interactive elements
-
-Depending on implementation progress, some features may currently use mock data instead of a fully connected database.
-
-This is acceptable for the proof-of-concept stage because the main goal is to validate the user interface and interaction flow.
-
----
-
-### 6.3 What the MVP Demonstrates
-
-The MVP demonstrates:
-
-- The main concept of goal breakdown
-- The daily check-in workflow
-- A friendly and motivating visual style
-- A simple reward system
-- A possible social accountability feature
-- A feasible direction for further development
-
-The MVP does not claim to be a fully deployed production-level application yet.
-
----
-
-## 7. Tech Stack
-
-### Frontend
-
-- **React**
-  - Used to build reusable UI components
-  - Suitable for creating interactive single-page applications
-
-- **Vite**
-  - Used as the build tool and development server
-  - Provides fast project setup and fast local preview
-
-- **CSS**
-  - Used for styling the interface
-  - Supports the Shiba-themed visual design
-
-### Development Tools
-
-- **GitHub**
-  - Used for version control and collaboration
-
-- **GitHub Codespaces**
-  - Used as a cloud-based development environment
-  - Allows team members to edit and preview the project without heavy local setup
-
----
-
-## 8. Project Structure
-
-A typical structure of this React + Vite project is:
-
-```text
-shibasteps/
-├── public/
-│   └── assets or static files
-├── src/
-│   ├── App.jsx
-│   ├── main.jsx
-│   ├── index.css
-│   └── components/
-│       └── reusable UI components
-├── index.html
-├── package.json
-├── vite.config.js
-└── README.md
-```
-
-### Important Files
-
-#### `src/main.jsx`
-
-This is the React entry point. It connects the React application to the HTML root element.
-
-#### `src/App.jsx`
-
-This is the main application component. Most of the visible page content starts from here.
-
-#### `src/index.css`
-
-This file contains global styling for the app.
-
-#### `package.json`
-
-This file stores project information, dependencies, and scripts such as:
-
-```bash
-npm install
-npm run dev
-```
-
----
-
-## 9. How to Run the Project
-
-### 9.1 Run in GitHub Codespaces
-
-1. Open the GitHub repository.
-2. Click **Code**.
-3. Open the project using **Codespaces**.
-4. Wait for the Codespace environment to load.
-5. Open the terminal.
-6. Install dependencies:
-
-```bash
-npm install
-```
-
-7. Start the development server:
-
-```bash
-npm run dev
-```
-
-8. Open the forwarded port, usually:
-
-```text
-http://localhost:5173
-```
-
-In Codespaces, this can usually be opened from the **Ports** tab by selecting the port and clicking **Open in Browser**.
-
----
-
-### 9.2 Run Locally
-
-If running locally, make sure Node.js and npm are installed.
-
-Then run:
-
-```bash
-npm install
-npm run dev
-```
-
-After that, open the local development URL shown in the terminal.
-
-For Vite projects, it is commonly:
-
-```text
-http://localhost:5173
-```
-
----
-
-## 10. Development Workflow
-
-A recommended workflow for team collaboration is:
-
-1. Pull the latest code from GitHub.
-2. Make changes in a separate branch if needed.
-3. Test the project locally or in Codespaces.
-4. Stage the changed files.
-5. Commit with a clear message.
-6. Push the changes to GitHub.
-7. Create a pull request if working through branches.
-8. Review and merge changes carefully.
-
-Example commands:
-
-```bash
-git status
-git add .
-git commit -m "Add daily check-in UI"
-git push
-```
-
----
-
-## 11. GitHub Collaboration Notes
-
-### Commit
-
-A commit records a snapshot of changes.
-
-Good commit messages should be specific.
-
-Examples:
-
-```bash
-Add goal card component
-Update ShibaSteps homepage layout
-Fix daily checklist styling
-Add Dog Circle mockup
-```
-
-Avoid unclear messages such as:
-
-```bash
-update
-change
-final final
-```
-
----
-
-### Branch
-
-A branch is a separate working version of the project.
-
-Branches are useful when different teammates are working on different features.
-
-Example:
-
-```bash
-git checkout -b feature/dog-circle
-```
-
----
-
-### Pull Request
-
-A pull request is a request to merge changes from one branch into another branch, usually into `main`.
-
-It allows teammates to review changes before merging.
-
----
-
-## 12. Current Progress
-
-Current progress may include:
-
-- Basic React + Vite project setup
-- Main ShibaSteps interface
-- Shiba-themed goal-tracking layout
-- Daily check-in section
-- Streak calendar concept
-- Bone points reward display
-- Dog Circle community mockup
-- GitHub repository setup
-- Codespaces-based development workflow
-
-This section should be updated regularly as the project develops.
-
----
-
-## 13. Future Improvements
-
-Future versions of ShibaSteps may include:
-
-### 13.1 User Authentication
-
-Allow users to sign up and log in.
-
-This would make it possible to store user-specific goals and progress.
-
----
-
-### 13.2 Database Integration
-
-A database can be used to store:
-
-- User accounts
-- Long-term goals
-- Daily tasks
-- Completed check-ins
-- Bone points
-- Dog Circle posts
-- Comments and reactions
-
-Possible database options include:
-
-- Firebase
-- Supabase
-- MongoDB
-- PostgreSQL
-
-The final choice depends on project requirements, team familiarity, and deployment needs.
-
----
-
-### 13.3 Real Goal Creation
-
-Instead of using mock data, users should be able to create, edit, and delete their own goals.
-
-Possible actions:
-
-- Add a new long-term goal
-- Break it into daily tasks
-- Edit task details
-- Delete unnecessary tasks
+- Create and delete daily tasks
 - Mark tasks as completed
+- Automatically organize tasks by date
+- Persistent local storage
+
+## Long-term Goal Tracking (Milestone 2)
+
+- Create multiple long-term goals
+- Associate daily tasks with individual goals
+- Track progress using progress bars
+- Dedicated page for managing all long-term goals
+
+## Daily Check-in
+
+- One check-in per day
+- Calendar view with completed-day paw print indicators
+- Local-time based date handling
+
+## Pomodoro Timer
+
+- Adjustable focus duration
+- Start, pause, resume and reset timer
+- Shared timer state between the frontend and ESP32
+
+## Shiba-themed Interface
+
+- Shiba Inu inspired design
+- Modern card-based layout
+- Responsive desktop interface
 
 ---
 
-### 13.4 Real Calendar Integration
+# Hardware Integration
 
-A more complete version could include:
+ShibaSteps extends beyond a web application by integrating an ESP32 development board.
 
-- Date-based task planning
-- Calendar view
-- Rescheduling incomplete tasks
-- Weekly review
-- Monthly progress summary
+The hardware system includes:
 
----
+- OLED display for current tasks and timer
+- Infrared remote control for physical interaction
+- Stepper motor providing a completion reward animation
+- Passive buzzer for operation feedback
+- Wi-Fi connection for real-time synchronization
 
-### 13.5 Dog Circle Backend
-
-The Dog Circle feature could become more realistic by supporting:
-
-- User posts
-- Likes
-- Comments
-- Shared group points
-- Group decoration rewards
-- Privacy controls
+Users can interact with their daily tasks without relying solely on the web interface.
 
 ---
 
-### 13.6 Data Visualization
+# Real-time Synchronization
 
-The app could show progress through:
+The React frontend and ESP32 communicate through an Express backend server.
 
-- Weekly completion rate
-- Long-term goal progress
-- Streak statistics
-- Task completion history
-- Community activity summary
+The synchronization system supports:
 
----
-
-### 13.7 Improved Reward System
-
-Bone points could be used for:
-
-- Unlocking badges
-- Decorating a Shiba avatar
-- Customising the Dog Circle
-- Unlocking achievement levels
-
-The reward system should remain simple and supportive. It should not distract from the main goal of building consistent habits.
+- Task synchronization
+- Task completion updates
+- Shared timer state
+- OLED display updates
+- Physical interactions triggering software updates
 
 ---
 
-## 14. Design Principles
-
-ShibaSteps follows these design principles:
-
-### 14.1 Simple
-
-The app should be easy to understand without a long tutorial.
-
-Users should quickly know:
-
-- What their goal is
-- What they need to do today
-- Whether they have completed their tasks
-
----
-
-### 14.2 Encouraging
-
-The app should motivate users without making them feel guilty.
-
-Missing one task should not make the user feel like they have failed completely.
-
----
-
-### 14.3 Cute but Functional
-
-The Shiba theme should make the app more enjoyable, but it should not reduce clarity.
-
-Visual elements should support the user experience, not overwhelm it.
-
----
-
-### 14.4 Progress-Oriented
-
-The app should help users focus on small but consistent progress.
-
-The main message is:
-
-> Small steps every day can lead to meaningful long-term improvement.
-
----
-
-## 15. Limitations
-
-The current MVP has some limitations:
-
-- It may not yet include real user authentication.
-- Some features may use mock data.
-- The Dog Circle community may be simulated rather than fully functional.
-- The database may not yet be fully integrated.
-- The reward system may still be basic.
-- The design may need further user testing and refinement.
-
-These limitations are expected at the MVP stage. The goal is to prove the core concept first, then improve the product based on feedback.
-
----
-
-## 16. Evaluation Plan
-
-To evaluate the MVP, we can ask test users to complete simple tasks:
-
-1. Understand the purpose of the app
-2. View a long-term goal
-3. Identify today’s tasks
-4. Check off a completed task
-5. Understand the meaning of bone points
-6. Understand the Dog Circle community concept
-7. Give feedback on whether the app feels motivating
-
-Possible feedback questions:
-
-- Is the app easy to understand?
-- Does the daily checklist feel useful?
-- Does the Shiba theme make the app more enjoyable?
-- Would you use this app to track your own goals?
-- Is the Dog Circle feature motivating or unnecessary?
-- What part of the interface is confusing?
-- What feature should be improved first?
-
----
-
-## 17. Milestone 1 Focus
-
-For Milestone 1, the focus is to show that the project has moved beyond an idea and has a working proof of concept.
-
-Key deliverables include:
-
-- Updated GitHub repository
-- Working React + Vite project
-- README with proof-of-concept explanation
-- Project log
-- Updated poster
-- Updated video
-- Evidence of technical progress
-- Clear future development plan
-
-The MVP should demonstrate at least one meaningful feature or user flow.
-
-For ShibaSteps, the most important flow is:
+# System Architecture
 
 ```text
-Long-term goal → Daily task → Check-in → Progress/reward → Community encouragement
+                 React Frontend
+                       │
+                REST API (HTTP)
+                       │
+                Express Backend
+                       │
+                Shared JSON State
+                  │            │
+             React UI       ESP32
+                               │
+      ┌──────────┬──────────┬──────────┬──────────┐
+      │          │          │          │
+    OLED      IR Remote   Stepper    Buzzer
+                           Motor
 ```
 
 ---
 
-## 18. Summary
+# Technology Stack
 
-ShibaSteps is a cute Shiba-themed goal-tracking MVP that helps users break long-term goals into daily actions, track progress through check-ins and streaks, earn bone points, and stay motivated through a small Dog Circle community.
+## Frontend
 
-The current version focuses on proving the main interaction flow and visual concept through a React + Vite web application.
+- React
+- Vite
+- JavaScript
+- CSS
 
-The project will continue to improve through user feedback, database integration, stronger interactivity, and clearer community features.
+## Backend
+
+- Node.js
+- Express
+
+## Hardware
+
+- ESP32
+- Arduino IDE
+
+## Communication
+
+- REST API
+- JSON
+
+## Electronic Components
+
+- OLED Display
+- Infrared Receiver
+- Stepper Motor
+- Passive Buzzer
+
+---
+
+# Getting Started
+
+## Frontend
+
+```bash
+npm install
+npm run dev
+```
+
+## Backend
+
+```bash
+cd server
+npm install
+node index.js
+```
+
+## ESP32
+
+1. Open the Arduino project.
+2. Configure the Wi-Fi credentials.
+3. Upload the sketch to the ESP32.
+4. Power the board and ensure it connects to the backend server.
+
+---
+
+# Future Improvements
+
+- True streak tracking with missed-day detection
+- Automatic rollover of unfinished tasks
+- Weekly and monthly productivity analytics
+- More interactive hardware animations
+- Mobile application support
+
+---
+
+# Team
+
+## Xu Peiyao
+
+- Frontend Development
+- ESP32 Hardware Integration
+- UI Design
+
+## Yu Jinlin
+
+- Frontend Development
+- Backend Development
+- System Integration
+
+---
+
+# Project Vision
+
+We believe productivity should not feel repetitive or mechanical.
+
+By combining software with physical interactions, ShibaSteps transforms everyday task management into a more engaging, rewarding and enjoyable experience.
