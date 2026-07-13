@@ -1,5 +1,6 @@
-const API_BASE =
-  "https://friendly-waffle-4jv7gjxjq759h7ggg-3001.app.github.dev";
+const API_BASE = String(
+  import.meta.env.VITE_API_BASE || "http://localhost:3001",
+).replace(/\/+$/, "");
 
 async function request(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
@@ -13,9 +14,7 @@ async function request(path, options = {}) {
   const text = await response.text();
 
   if (!response.ok) {
-    throw new Error(
-      `API ${response.status} at ${response.url}: ${text}`,
-    );
+    throw new Error(`API ${response.status} at ${response.url}: ${text}`);
   }
 
   try {

@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: shibasteps-api
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm run server
+    healthCheckPath: /health
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
