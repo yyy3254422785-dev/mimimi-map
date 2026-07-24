@@ -1360,10 +1360,8 @@ if (!privateStateLoaded) {
     disabled={profileLoading}
     aria-label="Open profile settings"
   >
-    <span className="profile-avatar">
-      {displayName.trim().charAt(0).toUpperCase() ||
-        "🐕"}
-    </span>
+    
+    
 
     <span>
       {profileLoading
