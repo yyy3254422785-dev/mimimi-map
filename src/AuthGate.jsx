@@ -6,6 +6,8 @@ export default function AuthGate({ children }) {
   const [session, setSession] = useState(null);
   const [loadingSession, setLoadingSession] = useState(true);
 
+  const [displayName, setDisplayName] = useState("");
+
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -59,15 +61,33 @@ export default function AuthGate({ children }) {
 
     try {
       if (mode === "register") {
-        const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-          options: {
-            emailRedirectTo: window.location.origin,
-          },
-        });
+  const trimmedDisplayName = displayName.trim();
 
-        if (error) throw error;
+  if (trimmedDisplayName.length === 0) {
+    throw new Error(
+      "Please enter a display name.",
+    );
+  }
+
+  if (trimmedDisplayName.length > 40) {
+    throw new Error(
+      "Display name cannot exceed 40 characters.",
+    );
+  }
+
+  const { data, error } =
+    await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        emailRedirectTo: window.location.origin,
+        data: {
+          display_name: trimmedDisplayName,
+        },
+      },
+    });
+      
+      if (error) throw error;
 
         if (data.session) {
           setMessage("Account created. You are now signed in.");
@@ -151,18 +171,45 @@ export default function AuthGate({ children }) {
             </button>
           </div>
 
-          <form className="auth-form" onSubmit={handleSubmit}>
-            <label>
-              Email
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="you@example.com"
-                autoComplete="email"
-                required
-              />
-            </label>
+         <form
+  className="auth-form"
+  onSubmit={handleSubmit}
+>
+  {mode === "register" && (
+    <label>
+      Display name
+      <input
+        type="text"
+        value={displayName}
+        onChange={(event) =>
+          setDisplayName(event.target.value)
+        }
+        placeholder="How should other Shibas see you?"
+        autoComplete="nickname"
+        minLength={1}
+        maxLength={40}
+        required
+      />
+      <small className="auth-field-hint">
+        This name will appear in Dog Circle.
+      </small>
+    </label>
+  )}
+
+  <label>
+    Email
+    <input
+      type="email"
+      value={email}
+      onChange={(event) =>
+        setEmail(event.target.value)
+      }
+      placeholder="you@example.com"
+      autoComplete="email"
+      required
+    />
+  </label>
+   
 
             <label>
               Password
