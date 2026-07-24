@@ -239,160 +239,7 @@ function normalizePrivateData(value, todayKey) {
   };
 }
 
-useEffect(() => {
-  let cancelled = false;
 
-  async function loadPrivateState() {
-    try {
-      setPrivateStateError("");
-
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-
-      if (sessionError) {
-        throw sessionError;
-      }
-
-      if (!session?.user?.id) {
-        throw new Error("No authenticated user session found.");
-      }
-
-      const remoteState = await getSharedState();
-      let nextPrivateData;
-
-      if (
-        remoteState?.appData?.schemaVersion === 1
-      ) {
-        nextPrivateData = normalizePrivateData(
-          remoteState.appData,
-          todayKey,
-        );
-      } else {
-        const migrationOwner = localStorage.getItem(
-          LEGACY_MIGRATION_OWNER_KEY,
-        );
-
-        if (
-          !migrationOwner ||
-          migrationOwner === session.user.id
-        ) {
-          nextPrivateData = normalizePrivateData(
-            {
-              schemaVersion: 1,
-              goals,
-              activeGoalId:
-                activeGoal?.id ?? goals[0]?.id,
-              tasksByDate,
-              bonePoints,
-              checkedInDates,
-              carryOverDismissedDate,
-            },
-            todayKey,
-          );
-
-          await updatePrivateState({
-            appData: nextPrivateData,
-          });
-
-          localStorage.setItem(
-            LEGACY_MIGRATION_OWNER_KEY,
-            session.user.id,
-          );
-        } else {
-          nextPrivateData =
-            createCleanPrivateData(todayKey);
-
-          await updatePrivateState({
-            appData: nextPrivateData,
-          });
-        }
-      }
-
-      if (cancelled) {
-        return;
-      }
-
-      setGoals(nextPrivateData.goals);
-      setActiveGoalId(nextPrivateData.activeGoalId);
-      setTasksByDate(nextPrivateData.tasksByDate);
-      setBonePoints(nextPrivateData.bonePoints);
-      setCheckedInDates(
-        nextPrivateData.checkedInDates,
-      );
-      setCarryOverDismissedDate(
-        nextPrivateData.carryOverDismissedDate,
-      );
-
-      setPrivateStateLoaded(true);
-    } catch (error) {
-      console.error(
-        "Failed to load private state:",
-        error,
-      );
-
-      if (!cancelled) {
-        setPrivateStateError(
-          error.message ||
-            "Unable to load your private data.",
-        );
-        setPrivateStateLoaded(true);
-      }
-    }
-  }
-
-  loadPrivateState();
-
-  return () => {
-    cancelled = true;
-  };
-
-  // This effect intentionally runs once for each App mount.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, []);
-
-useEffect(() => {
-  if (!privateStateLoaded || privateStateError) {
-    return undefined;
-  }
-
-  const timeoutId = window.setTimeout(() => {
-    updatePrivateState({
-      appData: {
-        schemaVersion: 1,
-        goals,
-        activeGoalId:
-          activeGoal?.id ?? goals[0]?.id ?? "",
-        tasksByDate,
-        bonePoints,
-        checkedInDates,
-        carryOverDismissedDate,
-      },
-    }).catch((error) => {
-      console.error(
-        "Failed to save private state:",
-        error,
-      );
-      setPrivateStateError(
-        "Unable to save your latest changes.",
-      );
-    });
-  }, 500);
-
-  return () => {
-    window.clearTimeout(timeoutId);
-  };
-}, [
-  privateStateLoaded,
-  privateStateError,
-  goals,
-  activeGoal?.id,
-  tasksByDate,
-  bonePoints,
-  checkedInDates,
-  carryOverDismissedDate,
-]);
 
 function App() {
   const todayKey = getDateKey(new Date());
@@ -569,6 +416,160 @@ function App() {
   // --------------------------------------------------
 // Effects
 // --------------------------------------------------
+useEffect(() => {
+  let cancelled = false;
+
+  async function loadPrivateState() {
+    try {
+      setPrivateStateError("");
+
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError) {
+        throw sessionError;
+      }
+
+      if (!session?.user?.id) {
+        throw new Error("No authenticated user session found.");
+      }
+
+      const remoteState = await getSharedState();
+      let nextPrivateData;
+
+      if (
+        remoteState?.appData?.schemaVersion === 1
+      ) {
+        nextPrivateData = normalizePrivateData(
+          remoteState.appData,
+          todayKey,
+        );
+      } else {
+        const migrationOwner = localStorage.getItem(
+          LEGACY_MIGRATION_OWNER_KEY,
+        );
+
+        if (
+          !migrationOwner ||
+          migrationOwner === session.user.id
+        ) {
+          nextPrivateData = normalizePrivateData(
+            {
+              schemaVersion: 1,
+              goals,
+              activeGoalId:
+                activeGoal?.id ?? goals[0]?.id,
+              tasksByDate,
+              bonePoints,
+              checkedInDates,
+              carryOverDismissedDate,
+            },
+            todayKey,
+          );
+
+          await updatePrivateState({
+            appData: nextPrivateData,
+          });
+
+          localStorage.setItem(
+            LEGACY_MIGRATION_OWNER_KEY,
+            session.user.id,
+          );
+        } else {
+          nextPrivateData =
+            createCleanPrivateData(todayKey);
+
+          await updatePrivateState({
+            appData: nextPrivateData,
+          });
+        }
+      }
+
+      if (cancelled) {
+        return;
+      }
+
+      setGoals(nextPrivateData.goals);
+      setActiveGoalId(nextPrivateData.activeGoalId);
+      setTasksByDate(nextPrivateData.tasksByDate);
+      setBonePoints(nextPrivateData.bonePoints);
+      setCheckedInDates(
+        nextPrivateData.checkedInDates,
+      );
+      setCarryOverDismissedDate(
+        nextPrivateData.carryOverDismissedDate,
+      );
+
+      setPrivateStateLoaded(true);
+    } catch (error) {
+      console.error(
+        "Failed to load private state:",
+        error,
+      );
+
+      if (!cancelled) {
+        setPrivateStateError(
+          error.message ||
+            "Unable to load your private data.",
+        );
+        setPrivateStateLoaded(true);
+      }
+    }
+  }
+
+  loadPrivateState();
+
+  return () => {
+    cancelled = true;
+  };
+
+  // This effect intentionally runs once for each App mount.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
+
+useEffect(() => {
+  if (!privateStateLoaded || privateStateError) {
+    return undefined;
+  }
+
+  const timeoutId = window.setTimeout(() => {
+    updatePrivateState({
+      appData: {
+        schemaVersion: 1,
+        goals,
+        activeGoalId:
+          activeGoal?.id ?? goals[0]?.id ?? "",
+        tasksByDate,
+        bonePoints,
+        checkedInDates,
+        carryOverDismissedDate,
+      },
+    }).catch((error) => {
+      console.error(
+        "Failed to save private state:",
+        error,
+      );
+      setPrivateStateError(
+        "Unable to save your latest changes.",
+      );
+    });
+  }, 500);
+
+  return () => {
+    window.clearTimeout(timeoutId);
+  };
+}, [
+  privateStateLoaded,
+  privateStateError,
+  goals,
+  activeGoal?.id,
+  tasksByDate,
+  bonePoints,
+  checkedInDates,
+  carryOverDismissedDate,
+]);
 
 useEffect(() => {
   const fallbackGoalId = activeGoal?.id;
