@@ -76,3 +76,10 @@ export function updateTaskOnServer(taskId, done) {
     body: JSON.stringify({ done }),
   });
 }
+
+export function updatePrivateState(updates) {
+  return request("/api/state", {
+    method: "PATCH",
+    body: JSON.stringify(updates),
+  });
+}

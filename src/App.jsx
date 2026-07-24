@@ -2,7 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
 import "./App.css";
-import { getSharedState, publishTodayTasks } from "./shibaApi";
+import {
+  getSharedState,
+  publishTodayTasks,
+  updatePrivateState,
+} from "./shibaApi";
+import { supabase } from "./supabaseClient";
 import heroImage from "./assets/shiba-hero.png";
 
 
@@ -16,6 +21,9 @@ const STORAGE_KEYS = {
   posts: "shiba-posts",
   carryOverDismissedDate: "shiba-carry-over-dismissed-date",
 };
+
+const LEGACY_MIGRATION_OWNER_KEY =
+  "shiba-legacy-migration-owner";
 
 function createId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -166,13 +174,234 @@ function formatTimer(totalSeconds = 0) {
   )}`;
 }
 
+function createCleanPrivateData(todayKey) {
+  const firstGoal = {
+    id: createId(),
+    title: "My First Goal",
+  };
+
+  return {
+    schemaVersion: 1,
+    goals: [firstGoal],
+    activeGoalId: firstGoal.id,
+    tasksByDate: {
+      [todayKey]: [],
+    },
+    bonePoints: 0,
+    checkedInDates: [],
+    carryOverDismissedDate: "",
+  };
+}
+
+function normalizePrivateData(value, todayKey) {
+  const clean = createCleanPrivateData(todayKey);
+
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value)
+  ) {
+    return clean;
+  }
+
+  const goals =
+    Array.isArray(value.goals) && value.goals.length > 0
+      ? value.goals
+      : clean.goals;
+
+  const activeGoalId = goals.some(
+    (goal) => goal.id === value.activeGoalId,
+  )
+    ? value.activeGoalId
+    : goals[0].id;
+
+  return {
+    schemaVersion: 1,
+    goals,
+    activeGoalId,
+    tasksByDate:
+      value.tasksByDate &&
+      typeof value.tasksByDate === "object" &&
+      !Array.isArray(value.tasksByDate)
+        ? value.tasksByDate
+        : clean.tasksByDate,
+    bonePoints:
+      typeof value.bonePoints === "number"
+        ? value.bonePoints
+        : clean.bonePoints,
+    checkedInDates: Array.isArray(value.checkedInDates)
+      ? value.checkedInDates
+      : clean.checkedInDates,
+    carryOverDismissedDate:
+      typeof value.carryOverDismissedDate === "string"
+        ? value.carryOverDismissedDate
+        : "",
+  };
+}
+
+useEffect(() => {
+  let cancelled = false;
+
+  async function loadPrivateState() {
+    try {
+      setPrivateStateError("");
+
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError) {
+        throw sessionError;
+      }
+
+      if (!session?.user?.id) {
+        throw new Error("No authenticated user session found.");
+      }
+
+      const remoteState = await getSharedState();
+      let nextPrivateData;
+
+      if (
+        remoteState?.appData?.schemaVersion === 1
+      ) {
+        nextPrivateData = normalizePrivateData(
+          remoteState.appData,
+          todayKey,
+        );
+      } else {
+        const migrationOwner = localStorage.getItem(
+          LEGACY_MIGRATION_OWNER_KEY,
+        );
+
+        if (
+          !migrationOwner ||
+          migrationOwner === session.user.id
+        ) {
+          nextPrivateData = normalizePrivateData(
+            {
+              schemaVersion: 1,
+              goals,
+              activeGoalId:
+                activeGoal?.id ?? goals[0]?.id,
+              tasksByDate,
+              bonePoints,
+              checkedInDates,
+              carryOverDismissedDate,
+            },
+            todayKey,
+          );
+
+          await updatePrivateState({
+            appData: nextPrivateData,
+          });
+
+          localStorage.setItem(
+            LEGACY_MIGRATION_OWNER_KEY,
+            session.user.id,
+          );
+        } else {
+          nextPrivateData =
+            createCleanPrivateData(todayKey);
+
+          await updatePrivateState({
+            appData: nextPrivateData,
+          });
+        }
+      }
+
+      if (cancelled) {
+        return;
+      }
+
+      setGoals(nextPrivateData.goals);
+      setActiveGoalId(nextPrivateData.activeGoalId);
+      setTasksByDate(nextPrivateData.tasksByDate);
+      setBonePoints(nextPrivateData.bonePoints);
+      setCheckedInDates(
+        nextPrivateData.checkedInDates,
+      );
+      setCarryOverDismissedDate(
+        nextPrivateData.carryOverDismissedDate,
+      );
+
+      setPrivateStateLoaded(true);
+    } catch (error) {
+      console.error(
+        "Failed to load private state:",
+        error,
+      );
+
+      if (!cancelled) {
+        setPrivateStateError(
+          error.message ||
+            "Unable to load your private data.",
+        );
+        setPrivateStateLoaded(true);
+      }
+    }
+  }
+
+  loadPrivateState();
+
+  return () => {
+    cancelled = true;
+  };
+
+  // This effect intentionally runs once for each App mount.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
+
+useEffect(() => {
+  if (!privateStateLoaded || privateStateError) {
+    return undefined;
+  }
+
+  const timeoutId = window.setTimeout(() => {
+    updatePrivateState({
+      appData: {
+        schemaVersion: 1,
+        goals,
+        activeGoalId:
+          activeGoal?.id ?? goals[0]?.id ?? "",
+        tasksByDate,
+        bonePoints,
+        checkedInDates,
+        carryOverDismissedDate,
+      },
+    }).catch((error) => {
+      console.error(
+        "Failed to save private state:",
+        error,
+      );
+      setPrivateStateError(
+        "Unable to save your latest changes.",
+      );
+    });
+  }, 500);
+
+  return () => {
+    window.clearTimeout(timeoutId);
+  };
+}, [
+  privateStateLoaded,
+  privateStateError,
+  goals,
+  activeGoal?.id,
+  tasksByDate,
+  bonePoints,
+  checkedInDates,
+  carryOverDismissedDate,
+]);
+
 function App() {
   const todayKey = getDateKey(new Date());
 
   // --------------------------------------------------
   // State hooks: keep all hooks inside App and at top level
   // --------------------------------------------------
-
+  const [privateStateLoaded, setPrivateStateLoaded] = useState(false);
+  const [privateStateError, setPrivateStateError] = useState("");
   const [deviceState, setDeviceState] = useState(null);
   const [taskSyncError, setTaskSyncError] = useState("");
   const [deviceSyncError, setDeviceSyncError] = useState("");
@@ -232,26 +461,30 @@ function App() {
   const [taskInput, setTaskInput] = useState("");
   const [showCarryOverPrompt, setShowCarryOverPrompt] = useState(false);
 
+  const [
+  carryOverDismissedDate,
+  setCarryOverDismissedDate,
+] = useState(() => {
+  return loadString(
+    STORAGE_KEYS.carryOverDismissedDate,
+    "",
+  );
+});
+
   const [posts, setPosts] = useState(() => {
-    const savedPosts = loadJSON(STORAGE_KEYS.posts, null);
-
-    if (Array.isArray(savedPosts)) {
-      return savedPosts;
-    }
-
-    return [
-      {
-        id: createId(),
-        name: "Mochi",
-        text: "Checked in today! Our Dog Circle is getting stronger 🐶",
-      },
-      {
-        id: createId(),
-        name: "Bao",
-        text: "Almost skipped my task, but the streak reminder helped.",
-      },
-    ];
-  });
+  return [
+    {
+      id: createId(),
+      name: "Mochi",
+      text: "Checked in today! Our Dog Circle is getting stronger 🐶",
+    },
+    {
+      id: createId(),
+      name: "Bao",
+      text: "Almost skipped my task, but the streak reminder helped.",
+    },
+  ];
+});
 
   // --------------------------------------------------
   // Derived values
@@ -373,8 +606,11 @@ useEffect(() => {
   });
 }, [activeGoal?.id]);
 
-
+  
   useEffect(() => {
+     if (!privateStateLoaded) {
+    return undefined;}
+
     let cancelled = false;
 
     const uploadTasks = async () => {
@@ -405,9 +641,12 @@ useEffect(() => {
     return () => {
       cancelled = true;
     };
-  }, [todayTasks]);
+  }, [todayTasks, privateStateLoaded]);
 
   useEffect(() => {
+    if (!privateStateLoaded) {
+    return undefined;}
+
     let cancelled = false;
 
     const fetchDeviceState = async () => {
@@ -439,7 +678,7 @@ useEffect(() => {
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, []);
+  }, [privateStateLoaded]);
 
   useEffect(() => {
     const remotelyCompletedTaskIds = new Set(
@@ -502,19 +741,6 @@ useEffect(() => {
   }, [deviceState?.tasks, deviceTasks, todayKey, todayTasks]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.goals, JSON.stringify(goals));
-  }, [goals]);
-
-  useEffect(() => {
-    if (!activeGoal?.id) {
-      return;
-    }
-
-    localStorage.setItem(STORAGE_KEYS.activeGoalId, activeGoal.id);
-    localStorage.setItem(STORAGE_KEYS.goal, goal);
-  }, [activeGoal?.id, goal]);
-
-  useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.bonePoints, String(bonePoints));
   }, [bonePoints]);
 
@@ -530,20 +756,17 @@ useEffect(() => {
   }, [tasksByDate]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.posts, JSON.stringify(posts));
-  }, [posts]);
-
-  useEffect(() => {
-  const dismissedDate = localStorage.getItem(
-    STORAGE_KEYS.carryOverDismissedDate,
-  );
-
   setShowCarryOverPrompt(
     yesterdayUnfinishedCount > 0 &&
       !hasCheckedInToday &&
-      dismissedDate !== todayKey,
+      carryOverDismissedDate !== todayKey,
   );
-}, [yesterdayUnfinishedCount, todayKey, hasCheckedInToday]);
+}, [
+  yesterdayUnfinishedCount,
+  todayKey,
+  hasCheckedInToday,
+  carryOverDismissedDate,
+]);
 
   // --------------------------------------------------
   // Event handlers
@@ -815,14 +1038,13 @@ useEffect(() => {
       };
     });
 
-    localStorage.setItem(STORAGE_KEYS.carryOverDismissedDate, todayKey);
-    setSelectedDate(todayKey);
+    setCarryOverDismissedDate(todayKey);
     setCustomDate(todayKey);
     setShowCarryOverPrompt(false);
   }
 
   function dismissCarryOverPrompt() {
-    localStorage.setItem(STORAGE_KEYS.carryOverDismissedDate, todayKey);
+    setCarryOverDismissedDate(todayKey);
     setShowCarryOverPrompt(false);
   }
 
@@ -833,6 +1055,38 @@ useEffect(() => {
 
     setSelectedDate(customDate);
   }
+
+  if (privateStateError) {
+  return (
+    <main className="auth-page">
+      <section className="auth-card">
+        <div className="auth-dog">🐕</div>
+        <h2>Unable to load ShibaSteps</h2>
+        <p className="auth-error" role="alert">
+          {privateStateError}
+        </p>
+        <button
+          type="button"
+          className="auth-submit"
+          onClick={() => window.location.reload()}
+        >
+          Try again
+        </button>
+      </section>
+    </main>
+  );
+}
+
+if (!privateStateLoaded) {
+  return (
+    <main className="auth-page">
+      <section className="auth-card auth-loading">
+        <div className="auth-dog">🐕</div>
+        <p>Loading your private ShibaSteps data...</p>
+      </section>
+    </main>
+  );
+}
 
   return (
     <motion.div
