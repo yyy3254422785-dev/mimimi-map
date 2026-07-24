@@ -6,11 +6,13 @@ import {
   createPost,
   deletePost,
   getPosts,
+  getProfile,
   getSharedState,
   likePost,
   publishTodayTasks,
   unlikePost,
   updatePrivateState,
+  updateProfile,
 } from "./shibaApi";
 import { supabase } from "./supabaseClient";
 import heroImage from "./assets/shiba-hero.png";
@@ -322,8 +324,14 @@ function App() {
     "",
   );
 });
-
-  const [posts, setPosts] = useState([]);
+const [displayName, setDisplayName] = useState("");
+const [profileLoading, setProfileLoading] =
+  useState(true);
+const [profileSaving, setProfileSaving] =
+  useState(false);
+const [profileError, setProfileError] =
+ useState("");
+const [posts, setPosts] = useState([]);
 const [postInput, setPostInput] = useState("");
 const [postsLoading, setPostsLoading] =
   useState(true);
@@ -527,6 +535,54 @@ useEffect(() => {
   // This effect intentionally runs once for each App mount.
   // eslint-disable-next-line react-hooks/exhaustive-deps
 }, []);
+
+useEffect(() => {
+  if (!privateStateLoaded || privateStateError) {
+    return undefined;
+  }
+
+  let cancelled = false;
+
+  async function loadProfile() {
+    try {
+      setProfileLoading(true);
+      setProfileError("");
+
+      const profile = await getProfile();
+
+      if (
+        !profile ||
+        typeof profile.displayName !== "string"
+      ) {
+        throw new Error(
+          "The profile API returned invalid data.",
+        );
+      }
+
+      if (!cancelled) {
+        setDisplayName(profile.displayName);
+      }
+    } catch (error) {
+      console.error("Failed to load profile:", error);
+
+      if (!cancelled) {
+        setProfileError(
+          error.message || "Unable to load profile.",
+        );
+      }
+    } finally {
+      if (!cancelled) {
+        setProfileLoading(false);
+      }
+    }
+  }
+
+  loadProfile();
+
+  return () => {
+    cancelled = true;
+  };
+}, [privateStateLoaded, privateStateError]);
 
 useEffect(() => {
   if (!privateStateLoaded || privateStateError) {
@@ -802,6 +858,45 @@ useEffect(() => {
   // --------------------------------------------------
   // Event handlers
   // --------------------------------------------------
+async function handleUpdateProfile(event) {
+  event.preventDefault();
+
+  const trimmedDisplayName = displayName.trim();
+
+  if (
+    trimmedDisplayName.length < 1 ||
+    trimmedDisplayName.length > 40
+  ) {
+    setProfileError(
+      "Display name must contain 1 to 40 characters.",
+    );
+    return;
+  }
+
+  try {
+    setProfileSaving(true);
+    setProfileError("");
+
+    const updatedProfile = await updateProfile(
+      trimmedDisplayName,
+    );
+
+    setDisplayName(updatedProfile.displayName);
+
+    // Refresh posts so the updated author name is
+    // immediately visible in Dog Circle.
+    await refreshPosts();
+  } catch (error) {
+    console.error("Failed to update profile:", error);
+
+    setProfileError(
+      error.message || "Unable to update profile.",
+    );
+  } finally {
+    setProfileSaving(false);
+  }
+}
+
   async function refreshPosts() {
   const data = await getPosts();
 
@@ -1486,6 +1581,58 @@ if (!privateStateLoaded) {
         </div>
 
         <aside className="dashboard-column-right">
+          {/* Profile */}
+<section className="profile-card glass-sm">
+  <div className="section-label">Your Profile</div>
+
+  {profileLoading ? (
+    <p className="small-text">
+      Loading profile...
+    </p>
+  ) : (
+    <form
+      className="profile-form"
+      onSubmit={handleUpdateProfile}
+    >
+      <label htmlFor="profile-display-name">
+        Display name
+      </label>
+
+      <input
+        id="profile-display-name"
+        type="text"
+        value={displayName}
+        onChange={(event) =>
+          setDisplayName(event.target.value)
+        }
+        minLength={1}
+        maxLength={40}
+        autoComplete="nickname"
+        disabled={profileSaving}
+      />
+
+      <div className="profile-form-footer">
+        <span>{displayName.length}/40</span>
+
+        <button
+          type="submit"
+          disabled={
+            profileSaving ||
+            displayName.trim().length === 0
+          }
+        >
+          {profileSaving ? "Saving..." : "Save Name"}
+        </button>
+      </div>
+    </form>
+  )}
+
+  {profileError && (
+    <p className="error-text" role="alert">
+      {profileError}
+    </p>
+  )}
+</section>
           {/* Compact Create Goal (secondary small) */}
           <section className="create-section glass-sm">
             <div className="section-label">Create Goal</div>

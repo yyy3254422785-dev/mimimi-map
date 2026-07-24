@@ -121,3 +121,16 @@ export function unlikePost(postId) {
     },
   );
 }
+
+export function getProfile() {
+  return request("/api/profile");
+}
+
+export function updateProfile(displayName) {
+  return request("/api/profile", {
+    method: "PATCH",
+    body: JSON.stringify({
+      displayName,
+    }),
+  });
+}

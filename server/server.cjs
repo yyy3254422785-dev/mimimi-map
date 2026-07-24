@@ -611,6 +611,88 @@ app.patch(
 );
 
 /* --------------------------------------------------
+ * User Profile
+ * -------------------------------------------------- */
+
+app.get(
+  "/api/profile",
+  asyncRoute(async (req, res) => {
+    const userId = req.auth.user.id;
+
+    const rows = await supabaseRest(
+      req,
+      "profiles" +
+        `?id=eq.${encodeURIComponent(userId)}` +
+        "&select=id,display_name",
+    );
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return res.status(404).json({
+        error: "Profile not found",
+      });
+    }
+
+    const profile = rows[0];
+
+    return res.status(200).json({
+      id: profile.id,
+      displayName: profile.display_name,
+    });
+  }),
+);
+
+app.patch(
+  "/api/profile",
+  asyncRoute(async (req, res) => {
+    const displayName =
+      typeof req.body.displayName === "string"
+        ? req.body.displayName.trim()
+        : "";
+
+    if (
+      displayName.length < 1 ||
+      displayName.length > 40
+    ) {
+      return res.status(400).json({
+        error:
+          "Display name must contain 1 to 40 characters",
+      });
+    }
+
+    const userId = req.auth.user.id;
+
+    const rows = await supabaseRest(
+      req,
+      "profiles" +
+        `?id=eq.${encodeURIComponent(userId)}`,
+      {
+        method: "PATCH",
+        extraHeaders: {
+          Prefer: "return=representation",
+        },
+        body: {
+          display_name: displayName,
+        },
+      },
+    );
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return res.status(404).json({
+        error:
+          "Profile not found or you cannot update it",
+      });
+    }
+
+    const profile = rows[0];
+
+    return res.status(200).json({
+      id: profile.id,
+      displayName: profile.display_name,
+    });
+  }),
+);
+
+/* --------------------------------------------------
  * Dog Circle
  * -------------------------------------------------- */
 
