@@ -327,6 +327,10 @@ function App() {
 const [displayName, setDisplayName] = useState("");
 const [profileLoading, setProfileLoading] =
   useState(true);
+const [profileOpen, setProfileOpen] =
+  useState(false);
+const [profileDraftName, setProfileDraftName] =
+  useState("");
 const [profileSaving, setProfileSaving] =
   useState(false);
 const [profileError, setProfileError] =
@@ -861,7 +865,8 @@ useEffect(() => {
 async function handleUpdateProfile(event) {
   event.preventDefault();
 
-  const trimmedDisplayName = displayName.trim();
+  const trimmedDisplayName =
+    profileDraftName.trim();
 
   if (
     trimmedDisplayName.length < 1 ||
@@ -882,10 +887,12 @@ async function handleUpdateProfile(event) {
     );
 
     setDisplayName(updatedProfile.displayName);
+    setProfileDraftName(
+      updatedProfile.displayName,
+    );
 
-    // Refresh posts so the updated author name is
-    // immediately visible in Dog Circle.
     await refreshPosts();
+    setProfileOpen(false);
   } catch (error) {
     console.error("Failed to update profile:", error);
 
@@ -895,6 +902,22 @@ async function handleUpdateProfile(event) {
   } finally {
     setProfileSaving(false);
   }
+}
+
+function openProfile() {
+  setProfileDraftName(displayName);
+  setProfileError("");
+  setProfileOpen(true);
+}
+
+function closeProfile() {
+  if (profileSaving) {
+    return;
+  }
+
+  setProfileDraftName(displayName);
+  setProfileError("");
+  setProfileOpen(false);
 }
 
   async function refreshPosts() {
@@ -1329,54 +1352,136 @@ if (!privateStateLoaded) {
       transition={{ duration: 0.35 }}
     >
       <div className="container">
-        <AnimatePresence>
-          {showCarryOverPrompt && (
-            <motion.div
-              className="carryover-overlay"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-            <motion.div
-              className="carryover-modal"
-              initial={{ opacity: 0, scale: 0.9, y: 24 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 24 }}
-              transition={{ duration: 0.25 }}
-            >
-              <div className="dog-icon">🐶</div>
-              <h2>Move unfinished tasks?</h2>
-              <p>
-                You have {yesterdayUnfinishedCount} unfinished task
-                {yesterdayUnfinishedCount > 1 ? "s" : ""} from yesterday.
-              </p>
-              <p className="small-text">
-                Do you want to move them to today's plan?
-              </p>
+        <header className="app-topbar">
+  <button
+    type="button"
+    className="profile-trigger"
+    onClick={openProfile}
+    disabled={profileLoading}
+    aria-label="Open profile settings"
+  >
+    <span className="profile-avatar">
+      {displayName.trim().charAt(0).toUpperCase() ||
+        "🐕"}
+    </span>
 
-              <div className="carryover-actions">
-                <motion.button
-                  whileHover={{ scale: 1.04 }}
-                  whileTap={{ scale: 0.96 }}
-                  onClick={moveYesterdayTasksToToday}
-                >
-                  Move to Today
-                </motion.button>
+    <span>
+      {profileLoading
+        ? "Loading..."
+        : displayName || "Shiba User"}
+    </span>
 
-                <motion.button
-                  whileHover={{ scale: 1.04 }}
-                  whileTap={{ scale: 0.96 }}
-                  className="secondary-button"
-                  onClick={dismissCarryOverPrompt}
-                >
-                  Not Now
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <span aria-hidden="true">⌄</span>
+  </button>
+</header>
+      <AnimatePresence>
+  {profileOpen && (
+    <motion.div
+      className="profile-overlay"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          closeProfile();
+        }
+      }}
+    >
+      <motion.section
+        className="profile-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="profile-title"
+        initial={{ opacity: 0, scale: 0.94, y: 18 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.94, y: 18 }}
+      >
+        <div className="profile-modal-header">
+          <div>
+            <p className="section-label">
+              Your Profile
+            </p>
+            <h2 id="profile-title">
+              Edit display name
+            </h2>
+          </div>
+
+          <button
+            type="button"
+            className="profile-close"
+            onClick={closeProfile}
+            disabled={profileSaving}
+            aria-label="Close profile settings"
+          >
+            ×
+          </button>
+        </div>
+
+        <form
+          className="profile-form"
+          onSubmit={handleUpdateProfile}
+        >
+          <label htmlFor="profile-display-name">
+            Display name
+          </label>
+
+          <input
+            id="profile-display-name"
+            type="text"
+            value={profileDraftName}
+            onChange={(event) =>
+              setProfileDraftName(event.target.value)
+            }
+            minLength={1}
+            maxLength={40}
+            autoComplete="nickname"
+            disabled={profileSaving}
+            autoFocus
+          />
+
+          <p className="small-text">
+            This name appears in Dog Circle.
+          </p>
+
+          <div className="profile-character-count">
+            {profileDraftName.length}/40
+          </div>
+
+          {profileError && (
+            <p className="error-text" role="alert">
+              {profileError}
+            </p>
+          )}
+
+          <div className="profile-modal-actions">
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={closeProfile}
+              disabled={profileSaving}
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              disabled={
+                profileSaving ||
+                profileDraftName.trim().length === 0 ||
+                profileDraftName.trim() ===
+                  displayName.trim()
+              }
+            >
+              {profileSaving
+                ? "Saving..."
+                : "Save Changes"}
+            </button>
+          </div>
+        </form>
+      </motion.section>
+    </motion.div>
+  )}
+</AnimatePresence>
 
       <motion.section
         className="redesigned-hero"
@@ -1582,57 +1687,7 @@ if (!privateStateLoaded) {
 
         <aside className="dashboard-column-right">
           {/* Profile */}
-<section className="profile-card glass-sm">
-  <div className="section-label">Your Profile</div>
 
-  {profileLoading ? (
-    <p className="small-text">
-      Loading profile...
-    </p>
-  ) : (
-    <form
-      className="profile-form"
-      onSubmit={handleUpdateProfile}
-    >
-      <label htmlFor="profile-display-name">
-        Display name
-      </label>
-
-      <input
-        id="profile-display-name"
-        type="text"
-        value={displayName}
-        onChange={(event) =>
-          setDisplayName(event.target.value)
-        }
-        minLength={1}
-        maxLength={40}
-        autoComplete="nickname"
-        disabled={profileSaving}
-      />
-
-      <div className="profile-form-footer">
-        <span>{displayName.length}/40</span>
-
-        <button
-          type="submit"
-          disabled={
-            profileSaving ||
-            displayName.trim().length === 0
-          }
-        >
-          {profileSaving ? "Saving..." : "Save Name"}
-        </button>
-      </div>
-    </form>
-  )}
-
-  {profileError && (
-    <p className="error-text" role="alert">
-      {profileError}
-    </p>
-  )}
-</section>
           {/* Compact Create Goal (secondary small) */}
           <section className="create-section glass-sm">
             <div className="section-label">Create Goal</div>
