@@ -742,21 +742,6 @@ useEffect(() => {
   }, [deviceState?.tasks, deviceTasks, todayKey, todayTasks]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.bonePoints, String(bonePoints));
-  }, [bonePoints]);
-
-  useEffect(() => {
-    localStorage.setItem(
-      STORAGE_KEYS.checkedInDates,
-      JSON.stringify(checkedInDates),
-    );
-  }, [checkedInDates]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.tasksByDate, JSON.stringify(tasksByDate));
-  }, [tasksByDate]);
-
-  useEffect(() => {
   setShowCarryOverPrompt(
     yesterdayUnfinishedCount > 0 &&
       !hasCheckedInToday &&
