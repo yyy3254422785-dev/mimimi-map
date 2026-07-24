@@ -182,6 +182,50 @@ function userSupabaseHeaders(accessToken, extraHeaders = {}) {
   };
 }
 
+async function supabaseRest(
+  req,
+  path,
+  {
+    method = "GET",
+    body,
+    extraHeaders = {},
+  } = {},
+) {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/${path}`,
+    {
+      method,
+      headers: userSupabaseHeaders(
+        req.auth.accessToken,
+        extraHeaders,
+      ),
+      body:
+        body === undefined
+          ? undefined
+          : JSON.stringify(body),
+    },
+  );
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    const error = new Error(
+      `Supabase request failed (${response.status}): ` +
+        text.slice(0, 500),
+    );
+
+    error.statusCode =
+      response.status >= 400 &&
+      response.status < 500
+        ? response.status
+        : 500;
+
+    throw error;
+  }
+
+  return text ? JSON.parse(text) : null;
+}
+
 async function readUserState(userId, accessToken) {
   assertSupabaseConfigured();
 
@@ -563,6 +607,219 @@ app.patch(
     );
 
     return res.status(200).json(savedState.timer);
+  }),
+);
+
+/* --------------------------------------------------
+ * Dog Circle
+ * -------------------------------------------------- */
+
+app.get(
+  "/api/posts",
+  asyncRoute(async (req, res) => {
+    const posts = await supabaseRest(
+      req,
+      "posts" +
+        "?select=" +
+        "id,user_id,content,created_at," +
+        "profile:profiles!posts_user_id_fkey(display_name)" +
+        "&order=created_at.desc" +
+        "&limit=100",
+    );
+
+    if (!Array.isArray(posts) || posts.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    const postIds = posts
+      .map((post) => post.id)
+      .filter(Boolean);
+
+    const likes = await supabaseRest(
+      req,
+      "post_likes" +
+        "?select=post_id,user_id" +
+        `&post_id=in.(${postIds.join(",")})`,
+    );
+
+    const likeCounts = new Map();
+    const likedPostIds = new Set();
+
+    if (Array.isArray(likes)) {
+      likes.forEach((like) => {
+        likeCounts.set(
+          like.post_id,
+          (likeCounts.get(like.post_id) || 0) + 1,
+        );
+
+        if (like.user_id === req.auth.user.id) {
+          likedPostIds.add(like.post_id);
+        }
+      });
+    }
+
+    const result = posts.map((post) => ({
+      id: post.id,
+      content: post.content,
+      createdAt: post.created_at,
+      author: {
+        id: post.user_id,
+        displayName:
+          post.profile?.display_name || "Shiba User",
+      },
+      likeCount: likeCounts.get(post.id) || 0,
+      likedByMe: likedPostIds.has(post.id),
+      canDelete:
+        post.user_id === req.auth.user.id,
+    }));
+
+    return res.status(200).json(result);
+  }),
+);
+
+app.post(
+  "/api/posts",
+  asyncRoute(async (req, res) => {
+    const content =
+      typeof req.body.content === "string"
+        ? req.body.content.trim()
+        : "";
+
+    if (content.length === 0) {
+      return res.status(400).json({
+        error: "Post content cannot be empty",
+      });
+    }
+
+    if (content.length > 500) {
+      return res.status(400).json({
+        error:
+          "Post content cannot exceed 500 characters",
+      });
+    }
+
+    const rows = await supabaseRest(
+      req,
+      "posts",
+      {
+        method: "POST",
+        extraHeaders: {
+          Prefer: "return=representation",
+        },
+        body: [
+          {
+            user_id: req.auth.user.id,
+            content,
+          },
+        ],
+      },
+    );
+
+    const post = Array.isArray(rows)
+      ? rows[0]
+      : null;
+
+    if (!post) {
+      throw new Error(
+        "Post was created but no row was returned",
+      );
+    }
+
+    return res.status(201).json({
+      id: post.id,
+      content: post.content,
+      createdAt: post.created_at,
+      author: {
+        id: req.auth.user.id,
+      },
+      likeCount: 0,
+      likedByMe: false,
+      canDelete: true,
+    });
+  }),
+);
+
+app.delete(
+  "/api/posts/:postId",
+  asyncRoute(async (req, res) => {
+    const postId = req.params.postId;
+
+    const rows = await supabaseRest(
+      req,
+      `posts?id=eq.${encodeURIComponent(postId)}`,
+      {
+        method: "DELETE",
+        extraHeaders: {
+          Prefer: "return=representation",
+        },
+      },
+    );
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return res.status(404).json({
+        error:
+          "Post not found or you do not own it",
+      });
+    }
+
+    return res.status(200).json({
+      deleted: true,
+      id: postId,
+    });
+  }),
+);
+
+app.post(
+  "/api/posts/:postId/likes",
+  asyncRoute(async (req, res) => {
+    const postId = req.params.postId;
+
+    await supabaseRest(
+      req,
+      "post_likes" +
+        "?on_conflict=post_id,user_id",
+      {
+        method: "POST",
+        extraHeaders: {
+          Prefer:
+            "resolution=ignore-duplicates,return=minimal",
+        },
+        body: [
+          {
+            post_id: postId,
+            user_id: req.auth.user.id,
+          },
+        ],
+      },
+    );
+
+    return res.status(200).json({
+      liked: true,
+      postId,
+    });
+  }),
+);
+
+app.delete(
+  "/api/posts/:postId/likes",
+  asyncRoute(async (req, res) => {
+    const postId = req.params.postId;
+    const userId = req.auth.user.id;
+
+    await supabaseRest(
+      req,
+      "post_likes" +
+        `?post_id=eq.${encodeURIComponent(postId)}` +
+        `&user_id=eq.${encodeURIComponent(userId)}`,
+      {
+        method: "DELETE",
+      },
+    );
+
+    return res.status(200).json({
+      liked: false,
+      postId,
+    });
   }),
 );
 
