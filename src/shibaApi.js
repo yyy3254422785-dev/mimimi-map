@@ -83,3 +83,41 @@ export function updatePrivateState(updates) {
     body: JSON.stringify(updates),
   });
 }
+
+export function getPosts() {
+  return request("/api/posts");
+}
+
+export function createPost(content) {
+  return request("/api/posts", {
+    method: "POST",
+    body: JSON.stringify({ content }),
+  });
+}
+
+export function deletePost(postId) {
+  return request(
+    `/api/posts/${encodeURIComponent(postId)}`,
+    {
+      method: "DELETE",
+    },
+  );
+}
+
+export function likePost(postId) {
+  return request(
+    `/api/posts/${encodeURIComponent(postId)}/likes`,
+    {
+      method: "POST",
+    },
+  );
+}
+
+export function unlikePost(postId) {
+  return request(
+    `/api/posts/${encodeURIComponent(postId)}/likes`,
+    {
+      method: "DELETE",
+    },
+  );
+}

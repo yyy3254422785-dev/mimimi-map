@@ -3,8 +3,13 @@ import { AnimatePresence, motion } from "motion/react";
 
 import "./App.css";
 import {
+  createPost,
+  deletePost,
+  getPosts,
   getSharedState,
+  likePost,
   publishTodayTasks,
+  unlikePost,
   updatePrivateState,
 } from "./shibaApi";
 import { supabase } from "./supabaseClient";
@@ -318,21 +323,15 @@ function App() {
   );
 });
 
-  const [posts, setPosts] = useState(() => {
-  return [
-    {
-      id: createId(),
-      name: "Mochi",
-      text: "Checked in today! Our Dog Circle is getting stronger 🐶",
-    },
-    {
-      id: createId(),
-      name: "Bao",
-      text: "Almost skipped my task, but the streak reminder helped.",
-    },
-  ];
-});
-
+  const [posts, setPosts] = useState([]);
+const [postInput, setPostInput] = useState("");
+const [postsLoading, setPostsLoading] =
+  useState(true);
+const [postsError, setPostsError] = useState("");
+const [postSubmitting, setPostSubmitting] =
+  useState(false);
+const [pendingPostIds, setPendingPostIds] =
+  useState(() => new Set());
   // --------------------------------------------------
   // Derived values
   // --------------------------------------------------
@@ -411,7 +410,7 @@ function App() {
   const activeGoalProgress =
     goalProgressList.find((g) => g.id === activeGoal?.id)?.progressPercent ?? 0;
 
-  const shibaMessage = posts?.[0]?.text ?? "Ready for a walk!";
+  const shibaMessage = posts?.[0]?.content ?? "Ready for a walk!";
 
   // --------------------------------------------------
 // Effects
@@ -570,6 +569,52 @@ useEffect(() => {
   checkedInDates,
   carryOverDismissedDate,
 ]);
+
+useEffect(() => {
+  if (!privateStateLoaded || privateStateError) {
+    return undefined;
+  }
+
+  let cancelled = false;
+
+  async function loadPosts() {
+    try {
+      setPostsLoading(true);
+      setPostsError("");
+
+      const data = await getPosts();
+
+      if (!Array.isArray(data)) {
+        throw new Error(
+          "The community API returned invalid data.",
+        );
+      }
+
+      if (!cancelled) {
+        setPosts(data);
+      }
+    } catch (error) {
+      console.error("Failed to load posts:", error);
+
+      if (!cancelled) {
+        setPostsError(
+          error.message ||
+            "Unable to load Dog Circle.",
+        );
+      }
+    } finally {
+      if (!cancelled) {
+        setPostsLoading(false);
+      }
+    }
+  }
+
+  loadPosts();
+
+  return () => {
+    cancelled = true;
+  };
+}, [privateStateLoaded, privateStateError]);
 
 useEffect(() => {
   const fallbackGoalId = activeGoal?.id;
@@ -757,6 +802,119 @@ useEffect(() => {
   // --------------------------------------------------
   // Event handlers
   // --------------------------------------------------
+  async function refreshPosts() {
+  const data = await getPosts();
+
+  if (!Array.isArray(data)) {
+    throw new Error(
+      "The community API returned invalid data.",
+    );
+  }
+
+  setPosts(data);
+}
+
+async function handleCreatePost(event) {
+  event.preventDefault();
+
+  const content = postInput.trim();
+
+  if (!content) {
+    return;
+  }
+
+  if (content.length > 500) {
+    setPostsError(
+      "Posts cannot exceed 500 characters.",
+    );
+    return;
+  }
+
+  try {
+    setPostSubmitting(true);
+    setPostsError("");
+
+    await createPost(content);
+    setPostInput("");
+    await refreshPosts();
+  } catch (error) {
+    console.error("Failed to create post:", error);
+    setPostsError(
+      error.message || "Unable to publish this post.",
+    );
+  } finally {
+    setPostSubmitting(false);
+  }
+}
+
+function setPostPending(postId, pending) {
+  setPendingPostIds((current) => {
+    const next = new Set(current);
+
+    if (pending) {
+      next.add(postId);
+    } else {
+      next.delete(postId);
+    }
+
+    return next;
+  });
+}
+
+async function handleToggleLike(post) {
+  if (pendingPostIds.has(post.id)) {
+    return;
+  }
+
+  try {
+    setPostPending(post.id, true);
+    setPostsError("");
+
+    if (post.likedByMe) {
+      await unlikePost(post.id);
+    } else {
+      await likePost(post.id);
+    }
+
+    await refreshPosts();
+  } catch (error) {
+    console.error("Failed to update like:", error);
+    setPostsError(
+      error.message || "Unable to update this like.",
+    );
+  } finally {
+    setPostPending(post.id, false);
+  }
+}
+
+async function handleDeletePost(postId) {
+  if (pendingPostIds.has(postId)) {
+    return;
+  }
+
+  const confirmed = window.confirm(
+    "Delete this post permanently?",
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    setPostPending(postId, true);
+    setPostsError("");
+
+    await deletePost(postId);
+    await refreshPosts();
+  } catch (error) {
+    console.error("Failed to delete post:", error);
+    setPostsError(
+      error.message || "Unable to delete this post.",
+    );
+  } finally {
+    setPostPending(postId, false);
+  }
+}
 
   function stopIfSelectedDateLocked() {
   if (!isSelectedDateLocked) {
@@ -966,19 +1124,13 @@ useEffect(() => {
       return;
     }
 
-    const updatedCheckedInDates = [...checkedInDates, todayKey];
-    const newStreak = calculateCurrentStreak(updatedCheckedInDates, todayKey);
+    const updatedCheckedInDates = [
+    ...checkedInDates,
+    todayKey,
+  ];
 
-    setCheckedInDates(updatedCheckedInDates);
+setCheckedInDates(updatedCheckedInDates);
     setBonePoints((points) => points + 20);
-    setPosts((currentPosts) => [
-      {
-        id: createId(),
-        name: "You",
-        text: `Completed today's plan for "${goal}"! Current streak: ${newStreak} days 🦴`,
-      },
-      ...currentPosts,
-    ]);
   }
 
   function moveYesterdayTasksToToday() {
@@ -1459,29 +1611,127 @@ if (!privateStateLoaded) {
               </>
             )}
           </section>
+          {/* Dog Circle */}
+<section className="feed-sidebar glass-md">
+  <h2>Dog Circle 🐾</h2>
 
-          {/* Dog Circle (medium) */}
-          <section className="feed-sidebar glass-md">
-            <h2>Dog Circle 🐾</h2>
-            <p className="small-text">
-              This is still a simulated Dog Circle feed. It demonstrates social
-              accountability before adding a real backend.
-            </p>
+  <p className="small-text">
+    Share progress with other ShibaSteps users.
+  </p>
 
-            <div className="circle-score">
-              <strong>Circle Points: {bonePoints + streak * 10}</strong>
-            </div>
+  <div className="circle-score">
+    <strong>
+      Circle Points: {bonePoints + streak * 10}
+    </strong>
+  </div>
 
-            <div className="feed">
-              {posts.map((post) => (
-                <div className="post" key={post.id}>
-                  <strong>{post.name}</strong>
-                  <p>{post.text}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        </aside>
+  <form
+    className="post-composer"
+    onSubmit={handleCreatePost}
+  >
+    <textarea
+      value={postInput}
+      onChange={(event) =>
+        setPostInput(event.target.value)
+      }
+      placeholder="Share a small win..."
+      maxLength={500}
+      rows={3}
+      disabled={postSubmitting}
+    />
+
+    <div className="post-composer-footer">
+      <span>{postInput.length}/500</span>
+
+      <button
+        type="submit"
+        disabled={
+          postSubmitting ||
+          postInput.trim().length === 0
+        }
+      >
+        {postSubmitting
+          ? "Publishing..."
+          : "Post"}
+      </button>
+    </div>
+  </form>
+
+  {postsError && (
+    <p className="error-text" role="alert">
+      {postsError}
+    </p>
+  )}
+
+  {postsLoading ? (
+                  <p>Loading Dog Circle...</p>
+                ) : posts.length === 0 ? (
+                  <div className="empty-state">
+                    <p>No posts yet.</p>
+                    <p>Be the first Shiba to share an update.</p>
+                  </div>
+                ) : (
+                  <div className="feed">
+                    {posts.map((post) => {
+                      const pending = pendingPostIds.has(post.id);
+
+                      return (
+                        <article className="post" key={post.id}>
+                          <div className="post-header">
+                            <strong>
+                              {post.author?.displayName ||
+                                "Shiba User"}
+                            </strong>
+
+                            <small>
+                              {new Date(
+                                post.createdAt,
+                              ).toLocaleString("en-SG", {
+                                dateStyle: "medium",
+                                timeStyle: "short",
+                              })}
+                            </small>
+                          </div>
+
+                          <p>{post.content}</p>
+
+                          <div className="post-actions">
+                            <button
+                              type="button"
+                              className={
+                                post.likedByMe
+                                  ? "like-button liked"
+                                  : "like-button"
+                              }
+                              onClick={() =>
+                                handleToggleLike(post)
+                              }
+                              disabled={pending}
+                            >
+                              {post.likedByMe ? "♥" : "♡"}{" "}
+                              {post.likeCount}
+                            </button>
+
+                            {post.canDelete && (
+                              <button
+                                type="button"
+                                className="danger-button"
+                                onClick={() =>
+                                  handleDeletePost(post.id)
+                                }
+                                disabled={pending}
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+          </aside>
       </main>
       </div>
     </motion.div>

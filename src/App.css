@@ -2068,3 +2068,125 @@ button:disabled {
   cursor: not-allowed;
   opacity: 0.65;
 }
+
+/* ============================================
+   REAL DOG CIRCLE
+   ============================================ */
+
+.post-composer {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.post-composer textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 92px;
+  padding: 12px 14px;
+  resize: vertical;
+  border: 1px solid rgba(199, 115, 55, 0.24);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #3b2f2f;
+  font: inherit;
+  line-height: 1.5;
+}
+
+.post-composer textarea::placeholder {
+  color: #9b8b8b;
+}
+
+.post-composer textarea:focus {
+  outline: none;
+  border-color: #ff8a3d;
+  box-shadow: 0 0 0 3px rgba(255, 138, 61, 0.1);
+}
+
+.post-composer textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.post-composer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.post-composer-footer span {
+  color: #8b8070;
+  font-size: 11px;
+}
+
+.post-composer-footer button {
+  width: auto;
+  padding: 9px 16px;
+}
+
+.post-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.post-header strong {
+  margin: 0;
+  font-size: 13px;
+}
+
+.post-header small {
+  color: #9b8b8b;
+  font-size: 10px;
+  line-height: 1.4;
+  text-align: right;
+}
+
+.post p {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.post-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.post-actions button {
+  width: auto;
+  padding: 7px 11px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.like-button {
+  background: rgba(255, 159, 104, 0.14);
+  color: #c97337;
+}
+
+.like-button:hover:not(:disabled) {
+  background: rgba(255, 159, 104, 0.25);
+  box-shadow: none;
+  transform: translateY(-1px);
+}
+
+.like-button.liked {
+  background: rgba(209, 100, 90, 0.16);
+  color: #d1645a;
+}
+
+.error-text {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(232, 160, 138, 0.2);
+  color: #a44840;
+  font-size: 12px;
+  line-height: 1.4;
+}
